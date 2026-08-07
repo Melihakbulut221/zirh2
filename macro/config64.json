@@ -1,0 +1,22 @@
+{
+  "//": "LibreLane config for the N=64 constrained-chain replica macro -",
+  "//2": "the production macro for ZIRH-2 chain A (zirh_hk g_a_macro).",
+  "//3": "Run by .github/workflows/macro.yaml (matrix).",
+
+  "DESIGN_NAME": "zirh_tmr_ff64",
+
+  "VERILOG_FILES": [
+    "dir::../src/zirh_tmr_lib.v",
+    "dir::../src/zirh_tmr_ff64.v"
+  ],
+
+  "CLOCK_PORT": "clk",
+  "CLOCK_PERIOD": 20,
+
+  "//4": "130 signal pins around a ~3.2k um2 flop core: pin-limited like",
+  "//5": "the 256 prototype, but with half the perimeter demand.",
+  "FP_SIZING": "relative",
+  "FP_CORE_UTIL": 40,
+
+  "ERROR_ON_UNMAPPED_CELLS": 0
+}

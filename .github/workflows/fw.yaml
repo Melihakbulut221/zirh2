@@ -1,0 +1,51 @@
+# =============================================================================
+# ZIRH-2 - firmware build
+#
+# Builds fw/ with the Ubuntu RISC-V toolchain and publishes rom.hex + the
+# disassembly as artifacts. The hex gets committed to the repo so the RTL
+# flow and the synthesis checks never depend on a local toolchain.
+# =============================================================================
+
+name: fw
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'fw/**'
+      - '.github/workflows/fw.yaml'
+
+jobs:
+  build-fw:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      # xpack tarball straight from GitHub releases: ~30 s, pinned version.
+      # The Ubuntu gcc-riscv64-unknown-elf package stalled 13+ minutes in
+      # apt on the first attempt.
+      - name: Install RISC-V toolchain (xpack, pinned)
+        run: |
+          curl -sL -o /tmp/gcc.tar.gz             https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/download/v15.2.0-1/xpack-riscv-none-elf-gcc-15.2.0-1-linux-x64.tar.gz
+          mkdir -p "$HOME/xpack"
+          tar -xzf /tmp/gcc.tar.gz -C "$HOME/xpack" --strip-components=1
+          echo "$HOME/xpack/bin" >> "$GITHUB_PATH"
+
+      - name: Build firmware
+        run: make -C fw CROSS=riscv-none-elf-
+
+      - name: Report size
+        run: |
+          SIZE=$(stat -c%s fw/build/fw.bin)
+          echo "firmware: $SIZE / 1024 bytes"
+          test "$SIZE" -le 1024
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: fw_rom
+          path: |
+            fw/build/rom.hex
+            fw/build/fw.elf
+            fw/build/fw.disasm

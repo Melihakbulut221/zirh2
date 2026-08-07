@@ -1,0 +1,21 @@
+# =============================================================================
+# ZIRH-2 - unit test for zirh_rom (fixture image, no toolchain needed)
+#
+#   make -C test -f Makefile.rom
+# =============================================================================
+
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRC_DIR = $(PWD)/../src
+
+SIM_BUILD = sim_build/rom
+
+VERILOG_SOURCES += $(SRC_DIR)/zirh_rom.v
+
+TOPLEVEL = zirh_rom
+COCOTB_TEST_MODULES = test_rom
+
+COMPILE_ARGS += -Pzirh_rom.HEX=\"$(PWD)/rom_fixture.hex\"
+
+COMPILE_ARGS += -I$(SRC_DIR)
+include $(shell cocotb-config --makefiles)/Makefile.sim

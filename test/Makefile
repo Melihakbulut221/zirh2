@@ -6,7 +6,35 @@ SIM ?= icarus
 FST ?= -fst # Use more efficient FST format
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v
+PROJECT_SOURCES = zirh_tmr_lib.v
+PROJECT_SOURCES += serv/serv_aligner.v
+PROJECT_SOURCES += serv/serv_alu.v
+PROJECT_SOURCES += serv/serv_bufreg.v
+PROJECT_SOURCES += serv/serv_bufreg2.v
+PROJECT_SOURCES += serv/serv_compdec.v
+PROJECT_SOURCES += serv/serv_csr.v
+PROJECT_SOURCES += serv/serv_ctrl.v
+PROJECT_SOURCES += serv/serv_decode.v
+PROJECT_SOURCES += serv/serv_immdec.v
+PROJECT_SOURCES += serv/serv_mem_if.v
+PROJECT_SOURCES += serv/serv_rf_if.v
+PROJECT_SOURCES += serv/serv_rf_ram.v
+PROJECT_SOURCES += serv/serv_rf_ram_if.v
+PROJECT_SOURCES += serv/serv_rf_top.v
+PROJECT_SOURCES += serv/serv_state.v
+PROJECT_SOURCES += serv/serv_synth_wrapper.v
+PROJECT_SOURCES += serv/serv_top.v
+PROJECT_SOURCES += zirh_tmr_ff64.v
+PROJECT_SOURCES += zirh_clk_rst.v
+PROJECT_SOURCES += zirh_rom.v
+PROJECT_SOURCES += zirh_bus.v
+PROJECT_SOURCES += zirh_ecc_ram.v
+PROJECT_SOURCES += zirh_rs422.v
+PROJECT_SOURCES += zirh_uart_regs.v
+PROJECT_SOURCES += zirh_soc.v
+PROJECT_SOURCES += zirh_hk.v
+PROJECT_SOURCES += zirh_tlm2.v
+PROJECT_SOURCES += tt_um_hma_zirh2.v
 
 ifneq ($(GATES),yes)
 

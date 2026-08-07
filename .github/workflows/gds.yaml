@@ -39,6 +39,9 @@ jobs:
 
   viewer:
     needs: gds
+    # The github-pages environment only deploys from main (ZIRH-1 lesson:
+    # branch runs can only fail here and burn ten minutes doing it).
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       pages: write # to deploy to Pages

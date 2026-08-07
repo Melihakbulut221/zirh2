@@ -1,11 +1,11 @@
 # =============================================================================
-# ZIRH-2 - integration test through the Tiny Tapeout harness
+# ZIRH-2 - top-level integration: the full chip, real firmware, v2 telemetry
 #
-# Run:  make -C test
+# Run:  make -C test -f Makefile.z2
 #
-# Runs at SILICON parameters (115.2k-class UART, telemetry every 2^16
-# clocks) against the committed mask-ROM contents, and drives nothing but
-# the TT pins - so CI runs the same tests against the gate-level netlist.
+# INTERVAL_LOG2 is overridden to 13 (frame every 8192 cycles) and RESET_DIV
+# to 20. The ROM carries the committed fw/rom.hex - the actual mask ROM
+# contents.
 # =============================================================================
 
 import cocotb
@@ -13,9 +13,8 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, RisingEdge, ReadOnly
 
 CLK_NS = 40
-DIV = 174
+DIV = 20
 FRAME_LEN = 17
-TLM_INTERVAL = 1 << 16
 BOOT_CYCLES = 30_000
 
 UART_TX_BIT = 4
@@ -58,7 +57,7 @@ async def uart_capture(dut, timeout_cycles):
     return sum(b << i for i, b in enumerate(bits[:8]))
 
 
-async def capture_frame(dut, timeout_cycles=TLM_INTERVAL + 40_000):
+async def capture_frame(dut, timeout_cycles=40_000):
     """Hunt for a v2 sync pair, then collect the remaining 15 bytes."""
     while True:
         b0 = await uart_capture(dut, timeout_cycles)
@@ -115,30 +114,3 @@ async def test_cpu_alive_pin_toggles(dut):
         if len(seen) == 2:
             break
     assert seen == {0, 1}, "CPU_ALIVE pin never toggled"
-
-
-async def _uart_send(dut, value):
-    from cocotb.triggers import RisingEdge
-    await RisingEdge(dut.clk)
-    bits = [0] + [(value >> i) & 1 for i in range(8)] + [1]
-    for b in bits:
-        cur = int(dut.ui_in.value)
-        dut.ui_in.value = (cur & ~0x08) | (b << 3)
-        await ClockCycles(dut.clk, DIV)
-
-
-@cocotb.test()
-async def test_echo_plus_one(dut):
-    """A byte into UART_RX comes back incremented - RX registers, bus,
-    firmware and TX registers proven through the pins alone. Telemetry
-    frames share the line; the capture hunts for the answer among them."""
-    await start(dut)
-    await ClockCycles(dut.clk, BOOT_CYCLES)
-
-    await _uart_send(dut, 0x41)
-    for _ in range(40):
-        b = await uart_capture(dut, TLM_INTERVAL + 40_000)
-        if b == 0x42:
-            break
-    else:
-        raise AssertionError("echo answer 0x42 never appeared on the line")

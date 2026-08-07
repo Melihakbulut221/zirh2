@@ -1,42 +1,63 @@
-![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg) ![](../../workflows/fpga/badge.svg)
+# ZIRH-2
 
-# Tiny Tapeout Verilog Project Template
+**Radiation-Tolerant Experiment Chip 2: a computer under the beam**
 
-- [Read the documentation for project](docs/info.md)
+> Successor to [ZIRH-1](https://github.com/Melihakbulut221/zirh). Where
+> ZIRH-1 measures what radiation does to storage, ZIRH-2 measures
+> whether a hardened computing element keeps executing - and which of
+> its protections earn their area. IHP SG13G2 130 nm, 8x2 Tiny Tapeout
+> tile.
 
-## What is Tiny Tapeout?
+## The two experiments
 
-Tiny Tapeout is an educational project that aims to make it easier and cheaper than ever to get your digital and analog designs manufactured on a real chip.
+**Placement A/B.** ZIRH-1's layout analysis showed the placer clusters
+TMR replicas of the same bit within 4-12 um of their shared voter - one
+particle can defeat the vote. ZIRH-2 carries two identical TMR rings:
+chain A's replicas are pre-hardened macros pinned 700/680/1380 um
+apart; chain B is tool-placed on the same die. ESCAPE(A) vs ESCAPE(B)
+in every telemetry frame prices placement separation in one number.
 
-To learn more and get started, visit https://tinytapeout.com.
+**The computer.** An unhardened SERV RISC-V (its crash rate is itself a
+measurement) runs from an SEU-immune mask ROM, keeps state in SECDED
+RAM with scrub-on-read, and proves its life every loop iteration with a
+rolling signature the telemetry carries. The bus watchdog guarantees a
+wedged peripheral costs an event, not the CPU.
 
-## Set up your Verilog project
+## Verified
 
-1. Add your Verilog files to the `src` folder.
-2. Edit the [info.yaml](info.yaml) and update information about your project, paying special attention to the `source_files` and `top_module` properties. If you are upgrading an existing Tiny Tapeout project, check out our [online info.yaml migration tool](https://tinytapeout.github.io/tt-yaml-upgrade-tool/).
-3. Edit [docs/info.md](docs/info.md) and add a description of your project.
-4. Adapt the testbench to your design. See [test/README.md](test/README.md) for more information.
+Eleven cocotb suites (integration through the TT harness at silicon
+parameters, gate-level in CI), ten synthesis integrity checks pinning
+every block's replica and flop counts in BOTH directions - TMR that
+must survive, and the ECC RAM's deliberate zero TMR. Hardened clean on
+the 8x2-class die with the bound macros: 81% utilization, setup
++6.5 ns at the 50 MHz constraint (20 MHz nominal), hold +79 ps,
+DRC/LVS/antenna zero.
 
-The GitHub action will automatically build the ASIC files using [LibreLane](https://www.zerotoasiccourse.com/terminology/librelane/).
+```sh
+pip install -r test/requirements.txt
+make -C test                  # integration via the TT harness
+bash scripts/check_tmr.sh     # hardening survives synthesis, 10 checks
+make -C fw                    # firmware (riscv-none-elf-, CI does this)
+```
 
-## Enable GitHub actions to build the results page
+The mask ROM contents are committed as src/rom_init.vh, generated from
+the CI firmware build - synthesis needs no toolchain and no parameter
+plumbing.
 
-- [Enabling GitHub Pages](https://tinytapeout.com/faq/#my-github-action-is-failing-on-the-pages-part)
+## Documentation
 
-## Resources
+- docs/info.md - datasheet: how it works, bench sequence
+- docs/PINMAP.md - frozen pin map and its rationale
+- docs/SCOPE.md - the engineering record: every sizing decision with
+  the measurement that forced it, including the 8x2 probe that failed
+  at 86% density and the shrink that fixed it
 
-- [FAQ](https://tinytapeout.com/faq/)
-- [Digital design lessons](https://tinytapeout.com/digital_design/)
-- [Learn how semiconductors work](https://tinytapeout.com/siliwiz/)
-- [Join the community](https://tinytapeout.com/discord)
-- [Build your design locally](https://www.tinytapeout.com/guides/local-hardening/)
+## License
 
-## What next?
+Apache-2.0. SERV is vendored unmodified from
+[olofk/serv](https://github.com/olofk/serv) (pin in src/serv/VERSION).
 
-- [Submit your design to the next shuttle](https://app.tinytapeout.com/).
-- Edit [this README](README.md) and explain your design, how it works, and how to test it.
-- Share your project on your social network of choice:
-  - LinkedIn [#tinytapeout](https://www.linkedin.com/search/results/content/?keywords=%23tinytapeout) [@TinyTapeout](https://www.linkedin.com/company/100708654/)
-  - Mastodon [#tinytapeout](https://chaos.social/tags/tinytapeout) [@matthewvenn](https://chaos.social/@matthewvenn)
-  - X (formerly Twitter) [#tinytapeout](https://twitter.com/hashtag/tinytapeout) [@tinytapeout](https://twitter.com/tinytapeout)
-  - Bluesky [@tinytapeout.com](https://bsky.app/profile/tinytapeout.com)
+---
+
+*Like ZIRH-1: a research vehicle, not flight hardware. It is the chip
+you build so that one day you know how to build that one.*

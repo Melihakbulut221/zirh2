@@ -1,0 +1,36 @@
+# =============================================================================
+# ZIRH-2 - top-level integration test (real firmware, v2 telemetry)
+#
+#   make -C test -f Makefile.z2
+# =============================================================================
+
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRC_DIR = $(PWD)/../src
+
+SIM_BUILD = sim_build/z2
+
+VERILOG_SOURCES += $(wildcard $(SRC_DIR)/serv/serv_*.v)
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_lib.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_ff64.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_clk_rst.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_rom.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_bus.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_ecc_ram.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_rs422.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_uart_regs.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_soc.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_hk.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tlm2.v
+VERILOG_SOURCES += $(SRC_DIR)/tt_um_hma_zirh2.v
+
+TOPLEVEL = tt_um_hma_zirh2
+COCOTB_TEST_MODULES = test_z2
+
+ROM_HEX ?= $(PWD)/../fw/rom.hex
+COMPILE_ARGS += -Ptt_um_hma_zirh2.ROM_HEX=\"$(ROM_HEX)\"
+COMPILE_ARGS += -Ptt_um_hma_zirh2.INTERVAL_LOG2=13
+COMPILE_ARGS += -Ptt_um_hma_zirh2.RESET_DIV=20
+
+COMPILE_ARGS += -I$(SRC_DIR)
+include $(shell cocotb-config --makefiles)/Makefile.sim
