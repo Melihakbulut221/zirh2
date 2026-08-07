@@ -6,14 +6,17 @@
 // state, plain checksum-covered payload), wider frame. v1 stays untouched
 // for the frozen ZIRH-1.
 //
-// FRAME (17 bytes):
-//   0  0x5A 'Z'    1  0x32 '2'   <- version marker distinguishes v1/v2
+// FRAME v2.1 (20 bytes):
+//   0  0x5A 'Z'    1  0x33 '3'   <- length is keyed off this marker
 //   2  STATUS      {seq[3:0], armed, infra, mode[1:0]}
 //   3-4   PLAIN    5-6   RAW_A   7-8   ESC_A     (16-bit big-endian)
 //   9-10  RAW_B    11-12 ESC_B
 //   13 ECC_CORR    14 ECC_UNCORR
 //   15 CPU_SIG     <- firmware's rolling liveness signature
-//   16 XOR of bytes 0..15
+//   16 BOOT        <- CPU watchdog reboots: a climbing value means the
+//                     computer keeps dying and keeps being recovered
+//   17 BUS_TO      18 RX_FERR
+//   19 XOR of bytes 0..18
 //
 // ESC_A versus ESC_B side by side in every frame IS the placement A/B
 // experiment's data product; CPU_SIG frozen across frames means the
@@ -37,6 +40,9 @@ module zirh_tlm2 #(
     input  wire [7:0]  cnt_ecc_c_i,
     input  wire [7:0]  cnt_ecc_u_i,
     input  wire [7:0]  cpu_sig_i,
+    input  wire [7:0]  boot_cnt_i,
+    input  wire [7:0]  cnt_bus_to_i,
+    input  wire [7:0]  cnt_ferr_i,
     input  wire        armed_i,
     input  wire [1:0]  mode_i,
     input  wire        err_infra_i,
@@ -49,7 +55,7 @@ module zirh_tlm2 #(
 );
 
     localparam integer IW = INTERVAL_LOG2;
-    localparam [4:0] LAST_IDX = 5'd16;
+    localparam [4:0] LAST_IDX = 5'd19;
 
     wire [IW-1:0] intv_q;
     wire          intv_err;
@@ -79,7 +85,7 @@ module zirh_tlm2 #(
 
     // --- snapshot -----------------------------------------------------------
     reg [15:0] s_plain, s_raw_a, s_esc_a, s_raw_b, s_esc_b;
-    reg [7:0]  s_ecc_c, s_ecc_u, s_sig;
+    reg [7:0]  s_ecc_c, s_ecc_u, s_sig, s_boot, s_busto, s_ferr;
     reg        s_armed, s_infra;
     reg [1:0]  s_mode;
     reg [3:0]  seq;
@@ -90,6 +96,7 @@ module zirh_tlm2 #(
             s_plain <= 16'h0; s_raw_a <= 16'h0; s_esc_a <= 16'h0;
             s_raw_b <= 16'h0; s_esc_b <= 16'h0;
             s_ecc_c <= 8'h0;  s_ecc_u <= 8'h0;  s_sig <= 8'h0;
+            s_boot <= 8'h0;   s_busto <= 8'h0;  s_ferr <= 8'h0;
             s_armed <= 1'b0;  s_infra <= 1'b0;  s_mode <= 2'b00;
             seq <= 4'h0; infra_sticky <= 1'b0;
         end else begin
@@ -100,6 +107,9 @@ module zirh_tlm2 #(
                 s_esc_b <= cnt_esc_b_i;
                 s_ecc_c <= cnt_ecc_c_i;  s_ecc_u <= cnt_ecc_u_i;
                 s_sig   <= cpu_sig_i;
+                s_boot  <= boot_cnt_i;
+                s_busto <= cnt_bus_to_i;
+                s_ferr  <= cnt_ferr_i;
                 s_armed <= armed_i;
                 s_infra <= infra_sticky | err_infra_i;
                 s_mode  <= mode_i;
@@ -115,7 +125,7 @@ module zirh_tlm2 #(
     always @(*) begin
         case (idx)
             5'd0:    byte_mux = 8'h5A;
-            5'd1:    byte_mux = 8'h32;
+            5'd1:    byte_mux = 8'h33;
             5'd2:    byte_mux = status;
             5'd3:    byte_mux = s_plain[15:8];
             5'd4:    byte_mux = s_plain[7:0];
@@ -130,6 +140,9 @@ module zirh_tlm2 #(
             5'd13:   byte_mux = s_ecc_c;
             5'd14:   byte_mux = s_ecc_u;
             5'd15:   byte_mux = s_sig;
+            5'd16:   byte_mux = s_boot;
+            5'd17:   byte_mux = s_busto;
+            5'd18:   byte_mux = s_ferr;
             default: byte_mux = chk;
         endcase
     end

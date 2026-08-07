@@ -28,14 +28,23 @@
 //   0x0C INJECT  WO  0 plain, 1 one A-replica, 2 all-A (escape),
 //                    3 one B-replica, 4 all-B
 //   0x10 PLAIN   RO  0x14 RAW_A  0x18 ESC_A  0x1C RAW_B  0x20 ESC_B
-//   0x24 ECC_C   RO  0x28 ECC_U
+//   0x24 ECC_C   RO  0x28 ECC_U  0x2C BUS_TO  0x30 FERR  0x34 BOOT
+//
+// CPU WATCHDOG: a TMR'd cycle counter clears on every firmware signature
+// write. If no write arrives for 2^WD_LIMIT_LOG2 cycles (~52 ms at the
+// default, versus a signature per ~100 us loop), wd_rst_o asserts for 16
+// cycles - the top resets ONLY the SoC, never the instrument - and the
+// TMR'd BOOT counter increments. A dead computer becomes a counted,
+// recovered event instead of an end state; repeated reboots are visible
+// as a climbing BOOT field in telemetry.
 // =============================================================================
 
 `default_nettype none
 
 module zirh_hk #(
     parameter integer N  = 64,    // ring length, must be even
-    parameter integer CW = 16
+    parameter integer CW = 16,
+    parameter integer WD_LIMIT_LOG2 = 20   // CPU watchdog: 2^this cycles
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -48,9 +57,11 @@ module zirh_hk #(
     output wire [31:0] rdt_o,
     output wire        ack_o,
 
-    // ECC RAM event pulses (from zirh_soc)
+    // event pulses (from zirh_soc)
     input  wire        ecc_corr_i,
     input  wire        ecc_uncorr_i,
+    input  wire        bus_to_i,      // bus watchdog fired
+    input  wire        rx_ferr_i,     // UART frame error
 
     // snapshot exports for zirh_tlm2
     output wire [CW-1:0] cnt_plain_o,
@@ -60,6 +71,9 @@ module zirh_hk #(
     output wire [CW-1:0] cnt_esc_b_o,
     output wire [7:0]    cnt_ecc_c_o,
     output wire [7:0]    cnt_ecc_u_o,
+    output wire [7:0]    cnt_bus_to_o,
+    output wire [7:0]    cnt_ferr_o,
+    output wire [7:0]    boot_cnt_o,
     output wire [7:0]    cpu_sig_o,
     output wire [1:0]    mode_o,
     output wire          armed_o,
@@ -67,7 +81,8 @@ module zirh_hk #(
 
     // live pulses for pins
     output wire        evt_o,           // any ring event
-    output wire        cpu_alive_o      // pulse per CPU_SIG write
+    output wire        cpu_alive_o,     // pulse per CPU_SIG write
+    output wire        wd_rst_o         // held 16 cycles: reset the SoC only
 );
 
     localparam integer INJ_POS = N / 2;
@@ -219,6 +234,46 @@ module zirh_hk #(
         .d_i(clear ? 8'h0 : c_ecc_u + 8'h1),
         .q_o(c_ecc_u), .err_o(e_eu));
 
+    wire [7:0] c_busto, c_ferr, boot_cnt;
+    wire e_bt, e_fe, e_bc;
+
+    zirh_tmr_reg #(.WIDTH(8)) u_c_busto (
+        .clk(clk), .rst_n(rst_n),
+        .en_i(clear | (bus_to_i & (c_busto != CMAX8))),
+        .d_i(clear ? 8'h0 : c_busto + 8'h1),
+        .q_o(c_busto), .err_o(e_bt));
+    zirh_tmr_reg #(.WIDTH(8)) u_c_ferr (
+        .clk(clk), .rst_n(rst_n),
+        .en_i(clear | (rx_ferr_i & (c_ferr != CMAX8))),
+        .d_i(clear ? 8'h0 : c_ferr + 8'h1),
+        .q_o(c_ferr), .err_o(e_fe));
+
+    // --- CPU watchdog --------------------------------------------------------
+    localparam integer WDW = WD_LIMIT_LOG2 + 1;
+    wire [WDW-1:0] wd_q;
+    wire           wd_err;
+    wire           wd_fire = wd_q[WD_LIMIT_LOG2];
+
+    zirh_tmr_reg #(.WIDTH(WDW)) u_wd (
+        .clk(clk), .rst_n(rst_n), .en_i(1'b1),
+        .d_i((cpu_alive_r | wd_fire) ? {WDW{1'b0}}
+                                     : wd_q + {{(WDW-1){1'b0}}, 1'b1}),
+        .q_o(wd_q), .err_o(wd_err));
+
+    zirh_tmr_reg #(.WIDTH(8)) u_boot (
+        .clk(clk), .rst_n(rst_n),
+        .en_i(clear | (wd_fire & (boot_cnt != CMAX8))),
+        .d_i(clear ? 8'h0 : boot_cnt + 8'h1),
+        .q_o(boot_cnt), .err_o(e_bc));
+
+    reg [3:0] wd_hold;
+    always @(posedge clk) begin
+        if (!rst_n)       wd_hold <= 4'h0;
+        else if (wd_fire) wd_hold <= 4'hF;
+        else if (|wd_hold) wd_hold <= wd_hold - 4'h1;
+    end
+    assign wd_rst_o = |wd_hold;
+
     // --- CPU signature (plain: firmware rewrites it constantly) -------------
     reg [7:0] cpu_sig;
     reg       cpu_alive_r;
@@ -236,8 +291,9 @@ module zirh_hk #(
     end
 
     // --- infra sticky (for SIG readback) + exports --------------------------
-    wire infra = mode_err | phase_err | warm_err |
-                 e_p | e_ra | e_ea | e_rb | e_eb | e_ec | e_eu;
+    wire infra = mode_err | phase_err | warm_err | wd_err |
+                 e_p | e_ra | e_ea | e_rb | e_eb | e_ec | e_eu |
+                 e_bt | e_fe | e_bc;
 
     reg infra_seen;
     always @(posedge clk) begin
@@ -251,8 +307,11 @@ module zirh_hk #(
     assign cnt_esc_a_o = c_esc_a;
     assign cnt_raw_b_o = c_raw_b;
     assign cnt_esc_b_o = c_esc_b;
-    assign cnt_ecc_c_o = c_ecc_c;
-    assign cnt_ecc_u_o = c_ecc_u;
+    assign cnt_ecc_c_o  = c_ecc_c;
+    assign cnt_ecc_u_o  = c_ecc_u;
+    assign cnt_bus_to_o = c_busto;
+    assign cnt_ferr_o   = c_ferr;
+    assign boot_cnt_o   = boot_cnt;
     assign cpu_sig_o   = cpu_sig;
     assign err_infra_o = infra;
     assign evt_o       = plain_evt | raw_a_evt | esc_a_evt | raw_b_evt | esc_b_evt;
@@ -270,6 +329,9 @@ module zirh_hk #(
         (reg_sel == 4'h8) ? {{(32-CW){1'b0}}, c_esc_b} :
         (reg_sel == 4'h9) ? {24'h0, c_ecc_c} :
         (reg_sel == 4'hA) ? {24'h0, c_ecc_u} :
+        (reg_sel == 4'hB) ? {24'h0, c_busto} :
+        (reg_sel == 4'hC) ? {24'h0, c_ferr}  :
+        (reg_sel == 4'hD) ? {24'h0, boot_cnt} :
         32'h0;
 
     assign ack_o = cyc_i;

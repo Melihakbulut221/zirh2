@@ -29,7 +29,8 @@
 module tt_um_hma_zirh2 #(
     parameter ROM_HEX = "",
     parameter INTERVAL_LOG2 = 16,
-    parameter RESET_DIV = 174
+    parameter RESET_DIV = 174,
+    parameter WD_LIMIT_LOG2 = 20
 ) (
     input  wire [7:0] ui_in,
     output wire [7:0] uo_out,
@@ -57,12 +58,18 @@ module tt_um_hma_zirh2 #(
   wire        evt_bus_to, evt_corr, evt_uncorr, rx_ferr, err_soc;
   wire        uart_tx;
 
+  // The CPU watchdog resets ONLY the SoC: the instrument (hk, tlm) and
+  // clk_rst never see it, so telemetry keeps flowing across a reboot and
+  // the BOOT field counts it.
+  wire wd_rst;
+  wire soc_rst_n = rst_n_sys & ~wd_rst;
+
   zirh_soc #(
       .ROM_HEX   (ROM_HEX),
       .RESET_DIV (RESET_DIV)
   ) u_soc (
       .clk               (clk),
-      .rst_n             (rst_n_sys),
+      .rst_n             (soc_rst_n),
       .uart_tx_o         (uart_tx),
       .uart_rx_i         (ui_in[3]),
       .tlm_data_i        (tlm_data),
@@ -83,11 +90,11 @@ module tt_um_hma_zirh2 #(
 
   // --- housekeeping (slot 3) ------------------------------------------------
   wire [15:0] c_plain, c_raw_a, c_esc_a, c_raw_b, c_esc_b;
-  wire [7:0]  c_ecc_c, c_ecc_u, cpu_sig;
+  wire [7:0]  c_ecc_c, c_ecc_u, cpu_sig, boot_cnt, c_busto, c_ferr;
   wire [1:0]  hk_mode;
   wire        hk_armed, hk_infra, hk_evt, cpu_alive;
 
-  zirh_hk u_hk (
+  zirh_hk #(.WD_LIMIT_LOG2(WD_LIMIT_LOG2)) u_hk (
       .clk          (clk),
       .rst_n        (rst_n_sys),
       .cyc_i        (s3_cyc),
@@ -98,6 +105,8 @@ module tt_um_hma_zirh2 #(
       .ack_o        (s3_ack),
       .ecc_corr_i   (evt_corr),
       .ecc_uncorr_i (evt_uncorr),
+      .bus_to_i     (evt_bus_to),
+      .rx_ferr_i    (rx_ferr),
       .cnt_plain_o  (c_plain),
       .cnt_raw_a_o  (c_raw_a),
       .cnt_esc_a_o  (c_esc_a),
@@ -105,12 +114,16 @@ module tt_um_hma_zirh2 #(
       .cnt_esc_b_o  (c_esc_b),
       .cnt_ecc_c_o  (c_ecc_c),
       .cnt_ecc_u_o  (c_ecc_u),
+      .cnt_bus_to_o (c_busto),
+      .cnt_ferr_o   (c_ferr),
+      .boot_cnt_o   (boot_cnt),
       .cpu_sig_o    (cpu_sig),
       .mode_o       (hk_mode),
       .armed_o      (hk_armed),
       .err_infra_o  (hk_infra),
       .evt_o        (hk_evt),
-      .cpu_alive_o  (cpu_alive)
+      .cpu_alive_o  (cpu_alive),
+      .wd_rst_o     (wd_rst)
   );
 
   // --- telemetry v2 ---------------------------------------------------------
@@ -127,6 +140,9 @@ module tt_um_hma_zirh2 #(
       .cnt_ecc_c_i (c_ecc_c),
       .cnt_ecc_u_i (c_ecc_u),
       .cpu_sig_i   (cpu_sig),
+      .boot_cnt_i  (boot_cnt),
+      .cnt_bus_to_i(c_busto),
+      .cnt_ferr_i  (c_ferr),
       .armed_i     (hk_armed),
       .mode_i      (hk_mode),
       .err_infra_i (hk_infra),
@@ -152,7 +168,7 @@ module tt_um_hma_zirh2 #(
   assign uio_oe  = 8'h00;
 
   wire _unused = &{ena, ui_in[7:4], ui_in[2:0], uio_in,
-                   tick16, tick256, rx_ferr, 1'b0};
+                   tick16, tick256, 1'b0};
 
 endmodule
 
