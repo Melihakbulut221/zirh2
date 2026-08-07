@@ -69,5 +69,6 @@
     "u_hk.g_a_macro.u_ff_a VPWR VGND VPWR VGND",
     "u_hk.g_a_macro.u_ff_b VPWR VGND VPWR VGND",
     "u_hk.g_a_macro.u_ff_c VPWR VGND VPWR VGND"
-  ]
+  ],
+  "PDN_CFG": "dir::pdn.tcl"
 }
