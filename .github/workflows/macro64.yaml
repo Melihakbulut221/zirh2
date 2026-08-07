@@ -1,0 +1,61 @@
+# =============================================================================
+# ZIRH-2 - chain-A macro hardening (zirh_tmr_ff64)
+#
+# Rebuilds the constrained-chain replica macro with the metal stack capped
+# at Metal5 so the chip-level TopMetal PDN can stripe over it (first
+# integration failed TT precheck on exactly this). Deliverables replace
+# macro/hardened64/ by hand after review.
+# =============================================================================
+
+name: macro64
+
+on:
+  workflow_dispatch:
+
+jobs:
+  harden-ff64:
+    runs-on: ubuntu-24.04
+    env:
+      PDK_ROOT: /home/runner/pdk
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install LibreLane
+        run: pip install librelane==3.0.5
+
+      - name: Harden the macro
+        run: |
+          python -m librelane \
+            --docker-no-tty --dockerized \
+            --pdk-root "$PDK_ROOT" \
+            --pdk ihp-sg13g2 \
+            --run-tag ff64 \
+            macro/config64.json
+
+      - name: Sanity checks
+        run: |
+          FINAL=macro/runs/ff64/final
+          DFF=$(grep -c "sg13g2_dfrbpq" $FINAL/pnl/zirh_tmr_ff64.pnl.v)
+          echo "dfrbpq: $DFF (expected 64)"
+          test "$DFF" -eq 64
+          echo "=== TopMetal geometry must be GONE from the LEF ==="
+          TM=$(grep -cE "LAYER TopMetal" $FINAL/lef/zirh_tmr_ff64.lef || true)
+          echo "TopMetal LEF entries: $TM (expected 0)"
+          test "$TM" -eq 0
+          grep -E "^  SIZE" $FINAL/lef/zirh_tmr_ff64.lef
+
+      - name: Upload artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: macro_ff64_m5
+          path: |
+            macro/runs/ff64/final/*
+            macro/runs/ff64/*.log

@@ -2,21 +2,25 @@
   "//": "LibreLane config for the N=64 constrained-chain replica macro -",
   "//2": "the production macro for ZIRH-2 chain A (zirh_hk g_a_macro).",
   "//3": "Run by .github/workflows/macro.yaml (matrix).",
-
   "DESIGN_NAME": "zirh_tmr_ff64",
-
   "VERILOG_FILES": [
     "dir::../src/zirh_tmr_lib.v",
     "dir::../src/zirh_tmr_ff64.v"
   ],
-
   "CLOCK_PORT": "clk",
   "CLOCK_PERIOD": 20,
-
   "//4": "130 signal pins around a ~3.2k um2 flop core: pin-limited like",
   "//5": "the 256 prototype, but with half the perimeter demand.",
   "FP_SIZING": "relative",
   "FP_CORE_UTIL": 40,
-
-  "ERROR_ON_UNMAPPED_CELLS": 0
+  "ERROR_ON_UNMAPPED_CELLS": 0,
+  "//6": "Metal stack capped BELOW the top-level PDN layers (TopMetal1/2):",
+  "//7": "the first integration left macro geometry on the TopMetals, the",
+  "//8": "chip PDN could not stripe over it, and TT precheck rejected the",
+  "//9": "split power stubs (port >10um from die edge). Capped at Metal5,",
+  "//10": "the chip's TopMetal straps pass over and via down onto the ring.",
+  "RT_MAX_LAYER": "Metal5",
+  "PDN_VERTICAL_LAYER": "Metal4",
+  "PDN_HORIZONTAL_LAYER": "Metal5",
+  "PDN_CORE_RING": true
 }
