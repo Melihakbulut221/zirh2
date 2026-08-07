@@ -196,3 +196,61 @@ Verified TMR library, UART, telemetry framer and monitor architecture;
 check_tmr methodology with its negative test; the CI shape (test + GL +
 precheck gating); the FPGA twin flow; the ground station. ZIRH-2 is these
 plus a computer, minus nothing.
+
+## ZIRH-3 experiment candidates (recorded 2026-08-07)
+
+Two techniques proposed for the platform, assessed against ZIRH-2's
+measured constraints (81% utilization, no on-die clock generation) and
+recorded here in the form this project accepts ideas: as experiments
+with a number to produce.
+
+### 1. Region-gated clock hold-and-heal - as an A/B experiment
+
+The literature technique: partition the clock tree into independent
+regions; on SET detection, gate only that region's clock for a few
+cycles while state is corrected.
+
+Assessment against this architecture, honestly: ZIRH's TMR heals
+THROUGH clocking - the voted feedback overwrites a corrupted replica on
+the next edge (verified per-block, single-cycle, in every unit suite).
+Gating a region's clock on error would suspend exactly that healing and
+widen the window in which a second strike becomes an uncorrectable
+double error. It also contradicts a recorded ZIRH-1 design decision
+(zirh_clk_rst: single clock domain, because every gated root is a new
+SET-sensitive point that can silence a whole region in one hit), and it
+does not fit ZIRH-2's die.
+
+What survives of the idea is its containment core, and the honest way
+to evaluate it is the same way this platform evaluated placement
+separation: two matched storage regions, one behind a clock gate with
+hold-on-error, one free-running with plain voted-feedback TMR, same
+die, same beam. Deliverables: upset and escape rates per region, plus
+the gate root's own SET contribution. If gating earns its area, the
+number will say so; the prediction recorded here is that voted-feedback
+healing wins on this PDK, and the experiment exists to check the
+prediction, not to assume it.
+
+### 2. Self-healing PLL - adapted to what the die actually has
+
+The literature technique: DPLL control state protected by ECC, giving
+millisecond-class automatic recovery from SEFI.
+
+Assessment: ZIRH chips have no PLL - the clock arrives from the TT
+harness and no on-die generation exists to protect. The PRINCIPLE the
+technique embodies (protected control state, automatic SEFI exit) is
+already this platform's spine, with silicon-bound instances: the TMR'd
+BAUD divisor (a corrupted divisor kills the link; verified to heal with
+the link alive), the TMR'd housekeeping mode/warm-up state, and the bus
+watchdog's sub-millisecond exit from a wedged peripheral.
+
+What is genuinely missing and small enough to matter: a CLOCK-LOSS
+OBSERVER - a free-running ring-oscillator-clocked watchdog that detects
+the external clock stuck (the one SEFI the synchronous die cannot see
+about itself) and raises a pin plus a latched flag readable after
+recovery. Ring oscillator in standard cells, a handful of gates.
+Deliverable: external-clock SEFI visibility from the ground, and the
+observer's own upset rate as a bonus measurement.
+
+Both candidates wait for ZIRH-2 beam data before any RTL: the A/B
+methodology they would use is the one ZIRH-2 is about to validate in
+silicon.
