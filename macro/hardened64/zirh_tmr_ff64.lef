@@ -11,40 +11,72 @@ MACRO zirh_tmr_ff64
     DIRECTION INOUT ;
     USE GROUND ;
     PORT
-      LAYER TopMetal1 ;
-        RECT 24.460 14.490 26.660 117.400 ;
+      LAYER Metal4 ;
+        RECT -10.740 -1.380 -5.740 133.680 ;
     END
     PORT
-      LAYER TopMetal1 ;
-        RECT 100.060 14.490 102.260 117.400 ;
+      LAYER Metal4 ;
+        RECT 119.020 -1.380 124.020 133.680 ;
     END
     PORT
-      LAYER TopMetal2 ;
-        RECT 5.760 33.820 107.520 36.020 ;
+      LAYER Metal5 ;
+        RECT -10.740 -1.380 124.020 3.620 ;
     END
     PORT
-      LAYER TopMetal2 ;
-        RECT 5.760 109.420 107.520 111.620 ;
+      LAYER Metal5 ;
+        RECT -10.740 128.680 124.020 133.680 ;
+    END
+    PORT
+      LAYER Metal4 ;
+        RECT 24.460 -1.380 26.660 133.680 ;
+    END
+    PORT
+      LAYER Metal4 ;
+        RECT 100.060 -1.380 102.260 133.680 ;
+    END
+    PORT
+      LAYER Metal5 ;
+        RECT -10.740 33.820 124.020 36.020 ;
+    END
+    PORT
+      LAYER Metal5 ;
+        RECT -10.740 109.420 124.020 111.620 ;
     END
   END VGND
   PIN VPWR
     DIRECTION INOUT ;
     USE POWER ;
     PORT
-      LAYER TopMetal1 ;
-        RECT 18.260 14.900 20.460 117.810 ;
+      LAYER Metal4 ;
+        RECT -3.740 5.620 1.260 126.680 ;
     END
     PORT
-      LAYER TopMetal1 ;
-        RECT 93.860 14.900 96.060 117.810 ;
+      LAYER Metal4 ;
+        RECT 112.020 5.620 117.020 126.680 ;
     END
     PORT
-      LAYER TopMetal2 ;
-        RECT 5.760 27.620 107.520 29.820 ;
+      LAYER Metal5 ;
+        RECT -3.740 5.620 117.020 10.620 ;
     END
     PORT
-      LAYER TopMetal2 ;
-        RECT 5.760 103.220 107.520 105.420 ;
+      LAYER Metal5 ;
+        RECT -3.740 121.680 117.020 126.680 ;
+    END
+    PORT
+      LAYER Metal4 ;
+        RECT 18.260 -1.380 20.460 133.680 ;
+    END
+    PORT
+      LAYER Metal4 ;
+        RECT 93.860 -1.380 96.060 133.680 ;
+    END
+    PORT
+      LAYER Metal5 ;
+        RECT -10.740 27.620 124.020 29.820 ;
+    END
+    PORT
+      LAYER Metal5 ;
+        RECT -10.740 103.220 124.020 105.420 ;
     END
   END VPWR
   PIN clk
@@ -1223,7 +1255,7 @@ MACRO zirh_tmr_ff64
       LAYER Metal1 ;
         RECT 5.760 14.900 107.520 117.400 ;
       LAYER Metal2 ;
-        RECT 3.735 131.860 29.830 132.070 ;
+        RECT 0.375 131.860 29.830 132.070 ;
         RECT 30.650 131.860 30.790 132.070 ;
         RECT 31.610 131.860 31.750 132.070 ;
         RECT 32.570 131.860 34.630 132.070 ;
@@ -1255,8 +1287,8 @@ MACRO zirh_tmr_ff64
         RECT 77.690 131.860 86.470 132.070 ;
         RECT 87.290 131.860 87.430 132.070 ;
         RECT 88.250 131.860 113.385 132.070 ;
-        RECT 3.735 0.610 113.385 131.860 ;
-        RECT 3.735 0.100 30.790 0.610 ;
+        RECT 0.375 0.610 113.385 131.860 ;
+        RECT 0.375 0.100 30.790 0.610 ;
         RECT 31.610 0.100 32.710 0.610 ;
         RECT 33.530 0.100 33.670 0.610 ;
         RECT 34.490 0.100 36.550 0.610 ;
@@ -1399,9 +1431,7 @@ MACRO zirh_tmr_ff64
         RECT 0.610 27.730 113.425 28.550 ;
         RECT 0.100 0.320 113.425 27.730 ;
       LAYER Metal4 ;
-        RECT 7.100 14.975 102.080 117.325 ;
-      LAYER Metal5 ;
-        RECT 18.395 14.810 102.125 117.490 ;
+        RECT 10.940 43.115 12.100 48.445 ;
   END
 END zirh_tmr_ff64
 END LIBRARY
