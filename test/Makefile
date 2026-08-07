@@ -54,6 +54,9 @@ VERILOG_SOURCES += $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_stdcell/verilog/sg13g2
 
 # this gets copied in by the GDS action workflow
 VERILOG_SOURCES += $(PWD)/gate_level_netlist.v
+# the chain-A macros are blackboxes in the top netlist; their own gate
+# netlist ships with the hardened deliverables
+VERILOG_SOURCES += $(PWD)/../macro/hardened64/zirh_tmr_ff64.nl.v
 
 endif
 
