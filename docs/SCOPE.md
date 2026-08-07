@@ -254,3 +254,33 @@ observer's own upset rate as a bonus measurement.
 Both candidates wait for ZIRH-2 beam data before any RTL: the A/B
 methodology they would use is the one ZIRH-2 is about to validate in
 silicon.
+
+## PDN/macro integration record (2026-08-07, first all-green CI)
+
+The bound-macro chip's road through TT precheck took three measured
+diagnosis layers, recorded here because every one generalizes to any
+IHP macro integration:
+
+1. Symptom: precheck rejected power ports >10 um from the die edge.
+   Geometry (final DEF): the vertical TopMetal1 stripes split at every
+   macro column - the macro's own hardening had used the full metal
+   stack, and its TopMetal1/2 geometry blocked the chip stripes.
+   Fix: re-harden the macro capped at Metal5 (internal PDN on
+   Metal4/Metal5, core ring), same 113.75 x 132.47 um footprint. The
+   macro workflow now gates on ZERO TopMetal entries in the LEF.
+2. New failure: PDN-0232/0233 - the chip grid generated no shapes for
+   the macro instances. Root cause read from LibreLane 3.0.5 source:
+   the default macro grid carries exactly one connect rule,
+   PDN_VERTICAL_LAYER<->PDN_HORIZONTAL_LAYER (TopMetal1<->TopMetal2),
+   which can never touch a macro whose pins sit below the TopMetals.
+   On sky130 this works by accident (top straps share met5 with macro
+   pins); on IHP's two-TopMetal stack it structurally cannot.
+   Fix: src/pdn.tcl - the byte-for-byte LibreLane default plus two
+   marked connect rules (Metal5<->TopMetal1, Metal4<->Metal5),
+   selected via PDN_CFG.
+3. Independently: the GL simulation needs the macro's own gate netlist
+   linked (blackboxes in the top netlist), from macro/hardened64/.
+
+With all three in: gds, precheck, gl_test and viewer green in one run,
+with chain A bound at 700/680/1380 um separation and chain B
+tool-placed on the same die. The A/B experiment is submission-ready.
