@@ -34,19 +34,19 @@
   "MAGIC_WRITE_LEF_PINONLY": 1,
   "ERROR_ON_UNMAPPED_CELLS": 0,
   "MACROS": {
-    "zirh_tmr_ff64": {
+    "zirh_tmr_ff32": {
       "gds": [
-        "dir::../macro/hardened64/zirh_tmr_ff64.gds"
+        "dir::../macro/hardened32/zirh_tmr_ff32.gds"
       ],
       "lef": [
-        "dir::../macro/hardened64/zirh_tmr_ff64.lef"
+        "dir::../macro/hardened32/zirh_tmr_ff32.lef"
       ],
       "nl": [
-        "dir::../macro/hardened64/zirh_tmr_ff64.nl.v"
+        "dir::../macro/hardened32/zirh_tmr_ff32.nl.v"
       ],
       "lib": {
         "*": [
-          "dir::../macro/hardened64/lib/zirh_tmr_ff64__nom_typ_1p20V_25C.lib"
+          "dir::../macro/hardened32/lib/zirh_tmr_ff32__nom_typ_1p20V_25C.lib"
         ]
       },
       "instances": {

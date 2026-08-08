@@ -24,7 +24,7 @@ PROJECT_SOURCES += serv/serv_rf_top.v
 PROJECT_SOURCES += serv/serv_state.v
 PROJECT_SOURCES += serv/serv_synth_wrapper.v
 PROJECT_SOURCES += serv/serv_top.v
-PROJECT_SOURCES += zirh_tmr_ff64.v
+PROJECT_SOURCES += zirh_tmr_ff32.v
 PROJECT_SOURCES += zirh_clk_rst.v
 PROJECT_SOURCES += zirh_rom.v
 PROJECT_SOURCES += zirh_bus.v
@@ -63,7 +63,7 @@ VERILOG_SOURCES += $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_stdcell/verilog/sg13g2
 VERILOG_SOURCES += $(PWD)/gate_level_netlist.v
 # the chain-A macros are blackboxes in the top netlist; their own gate
 # netlist ships with the hardened deliverables
-VERILOG_SOURCES += $(PWD)/../macro/hardened64/zirh_tmr_ff64.nl.v
+VERILOG_SOURCES += $(PWD)/../macro/hardened32/zirh_tmr_ff32.nl.v
 
 endif
 

@@ -13,7 +13,7 @@ SRC_DIR = $(PWD)/../src
 SIM_BUILD = sim_build/hk
 
 VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_lib.v
-VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_ff64.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_ff32.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_hk.v
 
 TOPLEVEL = zirh_hk

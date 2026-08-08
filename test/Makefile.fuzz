@@ -12,7 +12,7 @@ SIM_BUILD = sim_build/fuzz
 
 VERILOG_SOURCES += $(wildcard $(SRC_DIR)/serv/serv_*.v)
 VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_lib.v
-VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_ff64.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_ff32.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_clk_rst.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_rom.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_bus.v

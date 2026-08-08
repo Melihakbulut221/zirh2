@@ -105,7 +105,7 @@ async def test_every_tmr_island_heals(dut):
     tlm = dut.u_tlm
     islands = [
         ("hk.mode",   hk.u_mode,    2),  ("hk.phase",  hk.u_phase,   1),
-        ("hk.warm",   hk.u_warm,    7),  ("hk.plain",  hk.u_c_plain, 16),
+        ("hk.warm",   hk.u_warm,    6),  ("hk.plain",  hk.u_c_plain, 16),
         ("hk.raw_a",  hk.u_c_raw_a, 16), ("hk.esc_a",  hk.u_c_esc_a, 16),
         ("hk.raw_b",  hk.u_c_raw_b, 16), ("hk.esc_b",  hk.u_c_esc_b, 16),
         ("hk.ecc_c",  hk.u_c_ecc_c, 8),  ("hk.ecc_u",  hk.u_c_ecc_u, 8),
@@ -161,7 +161,7 @@ async def test_chain_replica_flips_land_in_raw_counters(dut):
             esc_before = int(esc.q_o.value)
             await Timer(10, unit="ns")
             v = int(ff.q_o.value)
-            ff.q_o.setimmediatevalue(v ^ (1 << random.randrange(64)))
+            ff.q_o.setimmediatevalue(v ^ (1 << random.randrange(32)))
             await ClockCycles(dut.clk, 4)
             assert int(raw.q_o.value) == raw_before + 1, (
                 f"chain {chain} trial {trial}: RAW did not count the flip")

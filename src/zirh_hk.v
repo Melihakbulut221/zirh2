@@ -5,12 +5,12 @@
 // The measurement heart of ZIRH-2, as one bus slave. Three circulating
 // rings of equal length N=64, all fed by the shared pattern source:
 //
-//   PLAIN    : 128 ordinary flops - cross-section reference, continuity
+//   PLAIN    : 32 ordinary flops - cross-section reference, continuity
 //              with ZIRH-1's data
-//   TMR A    : 3 replicas as zirh_tmr_ff64 instances - the CONSTRAINED
+//   TMR A    : 3 replicas as zirh_tmr_ff32 instances - the CONSTRAINED
 //              chain: at hardening time the three modules bind to
 //              pre-hardened macros pinned to separated coordinates
-//   TMR B    : 3 replicas as plain zirh_tmr_ff #(64) - the TOOL-PLACED
+//   TMR B    : 3 replicas as plain zirh_tmr_ff #(32) - the TOOL-PLACED
 //              chain, identical logic, no placement constraint
 //
 // ESCAPE(A) versus ESCAPE(B) under the same beam is the ZIRH-2 headline
@@ -49,7 +49,7 @@
 `default_nettype none
 
 module zirh_hk #(
-    parameter integer N  = 64,    // ring length, must be even
+    parameter integer N  = 32,    // ring length, must be even
     parameter integer CW = 16,
     parameter integer WD_LIMIT_LOG2 = 20   // CPU watchdog: 2^this cycles
 ) (
@@ -193,10 +193,10 @@ module zirh_hk #(
     // bind to placement-constrained macros at hardening time; the sim-only
     // small-N override falls back to the functionally identical library FF.
     generate
-        if (N == 64) begin : g_a_macro
-            zirh_tmr_ff64 u_ff_a (.clk(clk), .rst_n(rst_n), .d_i(a_d_a),  .q_o(a_qa));
-            zirh_tmr_ff64 u_ff_b (.clk(clk), .rst_n(rst_n), .d_i(a_base), .q_o(a_qb));
-            zirh_tmr_ff64 u_ff_c (.clk(clk), .rst_n(rst_n), .d_i(a_base), .q_o(a_qc));
+        if (N == 32) begin : g_a_macro
+            zirh_tmr_ff32 u_ff_a (.clk(clk), .rst_n(rst_n), .d_i(a_d_a),  .q_o(a_qa));
+            zirh_tmr_ff32 u_ff_b (.clk(clk), .rst_n(rst_n), .d_i(a_base), .q_o(a_qb));
+            zirh_tmr_ff32 u_ff_c (.clk(clk), .rst_n(rst_n), .d_i(a_base), .q_o(a_qc));
         end else begin : g_a_sim
             zirh_tmr_ff #(.WIDTH(N)) u_ff_a (.clk(clk), .rst_n(rst_n), .d_i(a_d_a),  .q_o(a_qa));
             zirh_tmr_ff #(.WIDTH(N)) u_ff_b (.clk(clk), .rst_n(rst_n), .d_i(a_base), .q_o(a_qb));

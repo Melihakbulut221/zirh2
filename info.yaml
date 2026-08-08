@@ -36,7 +36,7 @@ project:
     - "serv/serv_state.v"
     - "serv/serv_top.v"
     - "zirh_tmr_lib.v"
-    - "zirh_tmr_ff64.v"
+    - "zirh_tmr_ff32.v"
     - "zirh_clk_rst.v"
     - "zirh_rom.v"
     - "zirh_bus.v"
