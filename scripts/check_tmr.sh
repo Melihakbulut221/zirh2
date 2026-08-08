@@ -58,7 +58,7 @@ run_check() {
 
     local read_cmds=""
     for f in "${files[@]}"; do
-        read_cmds+="read_verilog -sv ${SRC}/${f}; "
+        read_cmds+="read_verilog -sv -DZIRH_SIM_ENV ${SRC}/${f}; "
     done
 
     local script="${read_cmds}
@@ -207,9 +207,10 @@ EXTRA_CMDS=""
 # --- check 10: the ZIRH-2 housekeeping block --------------------------------
 # zirh_hk at N=64 with the v2.1 additions (bus-timeout, frame-error and
 # BOOT counters + the CPU watchdog): 25 replica-bearing paramods x
-# instances. FFs: rings 448 + counters 363 + watchdog 67 + infra/misc = 931.
+# instances. FFs: rings 448 + counters 363 + watchdog 67 + infra/misc
+# + the two env strobe one-shots = 933.
 run_check "zirh_hk       (A/B chains + counters)" \
-    zirh_hk 25 931 zirh_tmr_ff \
+    zirh_hk 25 933 zirh_tmr_ff \
     zirh_tmr_lib.v zirh_tmr_ff64.v zirh_hk.v
 
 # --- check 11: the telemetry framer v2 --------------------------------------
@@ -219,10 +220,25 @@ run_check "zirh_tlm2     (framer v2 replicas)" \
     zirh_tlm2 6 213 zirh_tmr_ff \
     zirh_tmr_lib.v zirh_tlm2.v
 
-# --- check 12: the ZIRH-2 top -----------------------------------------------
-# FFs: soc 2156 + hk 931 + tlm2 213 + clk_rst 79 + glue = 3382.
+# --- check 12: the environment monitor --------------------------------------
+# zirh_env: window(11) + set(8) + btim(5) + burst(8) TMR regs; set and
+# burst share the WIDTH=8 paramod DEFINITION, and select counts cells per
+# definition - so 3 definitions x 3 replicas = 9, not 12 (the same gotcha
+# the header documents). FFs: TMR (11+8+5+8)x3 = 96 + one err flop per
+# reg = 4 + ripple 16 + rearm/tpulse/sync/evt glue 9 = 125. The
+# oscillator and catch chain are behavioral under ZIRH_SIM_ENV
+# (hand-instantiated cells otherwise); the ripple counter is shared RTL
+# so this count matches the silicon netlist.
+run_check "zirh_env      (TID + SET + burst)" \
+    zirh_env 9 125 zirh_tmr_ff \
+    zirh_tmr_lib.v zirh_env.v
+
+# --- check 13: the ZIRH-2 top -----------------------------------------------
+# FFs: soc 2156 + hk 933 + tlm2 213 + env 125 + clk_rst 79 + glue = 3509.
+# Replicas: v2.1's 40 + env's two NEW width definitions (11 and 5) x 3;
+# env's width-8 regs reuse a definition already counted under hk.
 run_check "tt_um_hma_zirh2 (ZIRH-2 top)" \
-    tt_um_hma_zirh2 40 3382 zirh_tmr_ff \
+    tt_um_hma_zirh2 46 3509 zirh_tmr_ff \
     serv/serv_aligner.v serv/serv_alu.v serv/serv_bufreg2.v \
     serv/serv_bufreg.v serv/serv_compdec.v serv/serv_csr.v \
     serv/serv_ctrl.v serv/serv_decode.v serv/serv_immdec.v \
@@ -230,7 +246,7 @@ run_check "tt_um_hma_zirh2 (ZIRH-2 top)" \
     serv/serv_rf_ram.v serv/serv_rf_top.v serv/serv_state.v \
     serv/serv_top.v zirh_tmr_lib.v zirh_tmr_ff64.v zirh_clk_rst.v \
     zirh_rom.v zirh_bus.v zirh_ecc_ram.v zirh_rs422.v zirh_uart_regs.v \
-    zirh_soc.v zirh_hk.v zirh_tlm2.v tt_um_hma_zirh2.v
+    zirh_soc.v zirh_hk.v zirh_tlm2.v zirh_env.v tt_um_hma_zirh2.v
 EXTRA_CMDS=""
 
 echo "------------------------------"

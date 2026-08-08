@@ -43,6 +43,16 @@ Reset, then:
    either chain, one replica or all three, and watch exactly the right
    counter move by one in the next frame.
 
+6. Beyond flop upsets, three pin-free environment instruments answer on
+   the same command path: 'T' runs a gated ring oscillator for a fixed
+   1024-cycle window and returns the count (total ionizing dose shifts
+   the frequency - repeated readings plot the dose curve), 'S' reads a
+   catch latch watching a quiet 64-stage inverter chain for single-event
+   TRANSIENTS (a different observable than flop upsets), 'B' reads a
+   burst correlator counting ring events that cluster within 16 cycles
+   (MBU statistics), and 'E' fires a self-test pulse down the SET chain
+   to prove the detector alive.
+
 ## External hardware
 
 None required - any 3.3 V serial adapter. Optional: LEDs on HEARTBEAT

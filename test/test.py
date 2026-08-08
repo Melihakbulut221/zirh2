@@ -8,6 +8,8 @@
 # the TT pins - so CI runs the same tests against the gate-level netlist.
 # =============================================================================
 
+import os
+
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, RisingEdge, ReadOnly
@@ -180,3 +182,56 @@ async def test_uart_commands_drive_the_instrument(dut):
     else:
         raise AssertionError(
             f"ROM checksum byte {ROM_SUM:#04x} never answered")
+
+
+@cocotb.test()
+async def test_env_commands_read_the_sensors(dut):
+    """The environment monitor over the command path: 'E' fires a test
+    pulse down the SET chain and acks 'e', 'S' reads the incremented catch
+    count, 'B' reads the burst counter, and 'T' (RTL only - the real
+    oscillator cannot run in zero-delay simulation) returns a plausible
+    window count. Skips itself against a mask that predates the env
+    commands: old firmware echoes 'E'+1 instead of the 'e' ack."""
+    await start(dut)
+    await ClockCycles(dut.clk, BOOT_CYCLES)
+
+    await _uart_send(dut, ord('E'))
+    for _ in range(40):
+        b = await uart_capture(dut, TLM_INTERVAL + 40_000)
+        if b == ord('e'):
+            break
+        if b == ord('E') + 1:
+            cocotb.pass_test("mask predates the env commands")
+            return
+    else:
+        raise AssertionError("'E' neither acked nor echoed")
+
+    await _uart_send(dut, ord('S'))
+    for _ in range(40):
+        b = await uart_capture(dut, TLM_INTERVAL + 40_000)
+        if b == 1:
+            break
+    else:
+        raise AssertionError("SET self-test count of 1 never answered")
+
+    await _uart_send(dut, ord('B'))
+    for _ in range(40):
+        b = await uart_capture(dut, TLM_INTERVAL + 40_000)
+        if b == 0:
+            break
+    else:
+        raise AssertionError("burst count of 0 never answered")
+
+    if os.getenv("GATES") == "yes":
+        return   # the cell-level oscillator loop would hang zero-delay sim
+
+    await _uart_send(dut, ord('T'))
+    got = []
+    for _ in range(40):
+        b = await uart_capture(dut, TLM_INTERVAL + 40_000)
+        got.append(b)
+        if len(got) >= 2 and (got[-2] << 8 | got[-1]) and \
+           900 <= (got[-2] << 8 | got[-1]) <= 1100:
+            break
+    else:
+        raise AssertionError(f"no plausible window count in {got}")

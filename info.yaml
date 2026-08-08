@@ -46,6 +46,7 @@ project:
     - "zirh_soc.v"
     - "zirh_hk.v"
     - "zirh_tlm2.v"
+    - "zirh_env.v"
     - "tt_um_hma_zirh2.v"
 
 # Frozen 2026-08-07, rationale in docs/ZIRH2-PINMAP.md.

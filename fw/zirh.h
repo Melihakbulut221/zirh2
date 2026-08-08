@@ -24,5 +24,8 @@
 #define HK_CTRL    REG32(HK_BASE + 0x04)
 #define HK_CPU_SIG REG32(HK_BASE + 0x08)
 #define HK_INJECT  REG32(HK_BASE + 0x0C)
+#define HK_ENV_RO  REG32(HK_BASE + 0x38)
+#define HK_ENV_SB  REG32(HK_BASE + 0x3C)
+#define ENV_RO_BUSY (1u << 31)
 
 #endif

@@ -19,6 +19,7 @@ R_SIG, R_CTRL, R_CPUSIG, R_INJECT = 0x00, 0x04, 0x08, 0x0C
 R_PLAIN, R_RAW_A, R_ESC_A, R_RAW_B, R_ESC_B = 0x10, 0x14, 0x18, 0x1C, 0x20
 R_ECC_C, R_ECC_U = 0x24, 0x28
 R_BUSTO, R_FERR, R_BOOT = 0x2C, 0x30, 0x34
+R_ENV_RO, R_ENV_SB = 0x38, 0x3C
 WD_LIMIT = 1 << 10   # must match Makefile.hk override
 
 INJ_PLAIN, INJ_A_ONE, INJ_A_ALL, INJ_B_ONE, INJ_B_ALL = range(5)
@@ -34,6 +35,8 @@ async def start(dut):
     dut.ecc_uncorr_i.value = 0
     dut.bus_to_i.value = 0
     dut.rx_ferr_i.value = 0
+    dut.env_ro_i.value = 0
+    dut.env_sb_i.value = 0
     dut.rst_n.value = 0
     await ClockCycles(dut.clk, 3)
     dut.rst_n.value = 1
@@ -257,3 +260,62 @@ async def test_cpu_watchdog_reboots_and_counts(dut):
     await ClockCycles(dut.clk, WD_LIMIT + 64)
     assert await rd(dut, R_BOOT) > boot_now, "silence must bring it back"
     w.kill()
+
+
+@cocotb.test()
+async def test_env_words_read_through(dut):
+    """0x38/0x3C are windows onto zirh_env's words, verbatim."""
+    await start(dut)
+    dut.env_ro_i.value = 0x8000_BEEF
+    dut.env_sb_i.value = 0x0000_2103
+    assert await rd(dut, R_ENV_RO) == 0x8000_BEEF
+    assert await rd(dut, R_ENV_SB) == 0x0000_2103
+
+
+@cocotb.test()
+async def test_env_strobes_fire_once(dut):
+    """Bit-0 writes to 0x38/0x3C emit exactly one strobe pulse even though
+    a bus write is asserted for two cycles, and bit-0-clear writes none."""
+    await start(dut)
+
+    class Counter:
+        def __init__(self, sig):
+            self.n = 0
+            cocotb.start_soon(self._run(sig))
+        async def _run(self, sig):
+            while True:
+                await RisingEdge(dut.clk)
+                await ReadOnly()
+                self.n += int(sig.value)
+
+    cs, ct = Counter(dut.env_start_o), Counter(dut.env_test_o)
+    await wr(dut, R_ENV_RO, 1)
+    await wr(dut, R_ENV_SB, 1)
+    await ClockCycles(dut.clk, 2)
+    assert cs.n == 1, f"start strobes: {cs.n}"
+    assert ct.n == 1, f"test strobes: {ct.n}"
+
+    await wr(dut, R_ENV_RO, 0)          # bit 0 clear: no strobe
+    await wr(dut, R_ENV_SB, 0x100)
+    await ClockCycles(dut.clk, 2)
+    assert cs.n == 1 and ct.n == 1, "bit-0-clear writes must not strobe"
+
+
+@cocotb.test()
+async def test_clear_exported_to_env(dut):
+    """The CTRL bit-8 clear reaches clear_o so env counters wipe with the
+    same command that wipes the ring counters."""
+    await start(dut)
+
+    seen = []
+    async def watch():
+        while True:
+            await RisingEdge(dut.clk)
+            await ReadOnly()
+            if int(dut.clear_o.value):
+                seen.append(1)
+    cocotb.start_soon(watch())
+
+    await wr(dut, R_CTRL, 0x100)
+    await ClockCycles(dut.clk, 2)
+    assert len(seen) >= 1, "clear_o never pulsed on a CTRL bit-8 write"

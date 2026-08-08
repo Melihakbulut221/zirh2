@@ -34,6 +34,7 @@ PROJECT_SOURCES += zirh_uart_regs.v
 PROJECT_SOURCES += zirh_soc.v
 PROJECT_SOURCES += zirh_hk.v
 PROJECT_SOURCES += zirh_tlm2.v
+PROJECT_SOURCES += zirh_env.v
 PROJECT_SOURCES += tt_um_hma_zirh2.v
 
 ifneq ($(GATES),yes)
@@ -41,6 +42,9 @@ ifneq ($(GATES),yes)
 # RTL simulation:
 SIM_BUILD				= sim_build/rtl
 VERILOG_SOURCES += $(addprefix $(SRC_DIR)/,$(PROJECT_SOURCES))
+# behavioral oscillator/chain models - the real cell loops would hang
+# zero-delay simulation (gate level keeps them but never enables the RO)
+COMPILE_ARGS    += -DZIRH_SIM_ENV
 
 else
 

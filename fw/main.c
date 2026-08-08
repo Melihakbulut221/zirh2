@@ -92,6 +92,25 @@ int main(void)
                 HK_CTRL = 0x100u | (HK_CTRL & 3u);
             else if (b == 'R')
                 tx_byte(rom_sum);
+            else if (b == 'T') {
+                /* run one oscillator window; a dead env block leaves the
+                   busy bit stuck and the watchdog turns that into a
+                   counted reboot - intentionally no software timeout */
+                HK_ENV_RO = 1u;
+                while (HK_ENV_RO & ENV_RO_BUSY)
+                    ;
+                uint32_t r = HK_ENV_RO;
+                tx_byte((uint8_t)(r >> 8));
+                tx_byte((uint8_t)r);
+            }
+            else if (b == 'S')
+                tx_byte((uint8_t)HK_ENV_SB);
+            else if (b == 'B')
+                tx_byte((uint8_t)(HK_ENV_SB >> 8));
+            else if (b == 'E') {
+                HK_ENV_SB = 1u;   /* fire a pulse down the SET chain */
+                tx_byte('e');
+            }
             else
                 tx_byte((uint8_t)(b + 1u));
         }

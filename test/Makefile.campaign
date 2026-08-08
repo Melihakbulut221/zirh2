@@ -22,6 +22,7 @@ VERILOG_SOURCES += $(SRC_DIR)/zirh_uart_regs.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_soc.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_hk.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_tlm2.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_env.v
 VERILOG_SOURCES += $(SRC_DIR)/tt_um_hma_zirh2.v
 
 TOPLEVEL = tt_um_hma_zirh2
@@ -30,6 +31,7 @@ COCOTB_TEST_MODULES = test_campaign
 # Keep in sync with WD_LIMIT in test_campaign.py
 COMPILE_ARGS += -Ptt_um_hma_zirh2.WD_LIMIT_LOG2=17
 COMPILE_ARGS += -I$(SRC_DIR)
+COMPILE_ARGS += -DZIRH_SIM_ENV
 
 # rom_init.vh is an include, invisible to VERILOG_SOURCES: without this extra
 # dependency a regenerated ROM silently reuses a stale sim.vvp (measured -

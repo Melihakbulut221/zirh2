@@ -308,3 +308,51 @@ campaign's contract distinguishes SURVIVED / REBOOTED / ZOMBIE with
 one hard assertion - a frozen signature with no reboot never happens.
 Top grows to 3382 FFs; the SoC synthesis check is now explicitly
 firmware-dependent (real ROM constants steer SERV's optimization).
+
+## v2.2 environment instruments (2026-08-08)
+
+Literature sweep looking for measurement value the tile was not yet
+capturing settled on three additions, chosen because every one is
+pin-free, digital-only, and small enough for the ~78% post-v2.1
+utilization; all read over the existing UART command path (hk registers
+0x38/0x3C, commands 'T'/'S'/'B'/'E'), and the telemetry frame stays at
+v2.1 - the frame is the autonomous heartbeat, these are polled
+instruments.
+
+TID SENSOR ('T'): an enable-gated 64-stage ring oscillator counted by an
+asynchronous ripple counter over a fixed 1024-cycle window. Total
+ionizing dose shifts thresholds and the frequency drifts with
+accumulated dose; ring-oscillator dosimetry is demonstrated across
+nodes from 250 nm bulk to 22 nm FD-SOI (e.g. the IEEE TNS 22-nm FD-SOI
+and 28-nm FD-SOI ring-oscillator TID studies). SEU counters measure the
+beam's discrete hits; this measures the accumulating damage - a second
+physical observable for the cost of ~130 flops and two NAND-worth of
+analog nothing.
+
+SET CATCHER ('S', self-test 'E'): a quiet 64-stage inverter chain
+watched by a cross-coupled NAND catch latch - the self-triggered capture
+structure of Narasimham et al. (IEEE TNS 2006, on-chip SET pulse-width
+characterization, 130/90 nm), also built on IHP 250 nm bulk (Design of
+an On-chip System for the SET Pulse Width Measurement, 2017). This
+version records occurrence, not width - a width digitizer needs a
+Vernier chain the tile has no room for, and is recorded as a ZIRH-3
+candidate. Combinational transients are invisible to every other
+counter on the die; the chain is the third particle detector after the
+flop rings and the ECC RAM, and 'E' proves it alive from the ground.
+
+BURST CORRELATOR ('B'): counts ring-event onsets arriving within 16
+cycles of a previous onset. MCU/MBU characterization work (heavy-ion
+DFF-chain statistics in 180 nm, satellite SRAM observations) treats
+spatial and temporal clustering as the signature separating multi-cell
+strikes from Poisson background; the correlator preserves that
+statistic on-chip where saturating counters would erase it after the
+fact.
+
+Mechanics worth recording: the oscillator and chain are hand-instantiated
+SG13G2 cells with (* keep *) inside keep_hierarchy islands (synthesis
+folds an inverter chain to a wire otherwise); RTL simulation swaps them
+for behavioral models under ZIRH_SIM_ENV because a zero-delay
+combinational loop hangs event-driven simulation, and gate-level runs
+keep the real cells but must never enable the oscillator - the 'T'
+exercise is RTL-and-silicon only. A dead env block leaves 'T' busy-wait
+stuck by design: the CPU watchdog converts that into a counted reboot.

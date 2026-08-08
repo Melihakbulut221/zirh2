@@ -14,8 +14,8 @@ from cocotb.triggers import ClockCycles, RisingEdge, ReadOnly
 
 CLK_NS = 40
 DIV = 20
-FRAME_LEN = 17
-BOOT_CYCLES = 30_000
+FRAME_LEN = 20
+BOOT_CYCLES = 120_000  # crt0 + the boot ROM-checksum loop
 
 UART_TX_BIT = 4
 CPU_ALIVE_BIT = 1
@@ -58,13 +58,13 @@ async def uart_capture(dut, timeout_cycles):
 
 
 async def capture_frame(dut, timeout_cycles=40_000):
-    """Hunt for a v2 sync pair, then collect the remaining 15 bytes."""
+    """Hunt for a v2.1 sync pair, then collect the rest of the frame."""
     while True:
         b0 = await uart_capture(dut, timeout_cycles)
         if b0 != 0x5A:
             continue
         b1 = await uart_capture(dut, 30 * DIV)
-        if b1 == 0x32:
+        if b1 == 0x33:
             frame = [b0, b1]
             for _ in range(FRAME_LEN - 2):
                 frame.append(await uart_capture(dut, 30 * DIV))
@@ -81,15 +81,16 @@ async def test_frame_carries_a_living_cpu(dut):
 
     f1 = await capture_frame(dut)
     chk = 0
-    for b in f1[:16]:
+    for b in f1[:19]:
         chk ^= b
-    assert f1[16] == chk, f"checksum {f1[16]:#04x} != {chk:#04x}"
+    assert f1[19] == chk, f"checksum {f1[19]:#04x} != {chk:#04x}"
 
     status = f1[2]
     assert (status >> 3) & 1 == 1, "armed must be set"
     assert (status >> 2) & 1 == 0, "no infra fault expected"
     assert f1[3:13] == [0] * 10, f"beam counters must be zero: {f1[3:13]}"
     assert f1[13] == 0 and f1[14] == 0, "no ECC events expected"
+    assert f1[16:19] == [0, 0, 0], "BOOT/BUS_TO/FERR must be zero"
     assert f1[15] != 0, "CPU signature is zero - firmware never reached hk"
 
     f2 = await capture_frame(dut)

@@ -257,7 +257,41 @@ def campaign(sp, sess, dec, pump):
               f"{'ok' if ok else 'FAIL'}")
         failures += not ok
     sp.write(b"R")
-    print(f"campaign: {len(CAMPAIGN) - failures}/{len(CAMPAIGN)} paths ok")
+
+    # environment monitor probes: raw byte answers, not frame fields, so
+    # scan the incoming stream directly (the decoder resyncs afterwards)
+    def scan_for(pred, timeout=5.0):
+        end = _t.time() + timeout
+        tail = []
+        while _t.time() < end:
+            for byte in sp.read(64):
+                tail.append(byte)
+                tail = tail[-16:]
+                if pred(tail):
+                    return tail
+        return None
+
+    env_fail = 0
+    sp.write(b"E")
+    if scan_for(lambda t: t[-1] == ord("e")) is None:
+        print("  cmd E: no self-test ack FAIL")
+        env_fail += 1
+    sp.write(b"S")
+    t = scan_for(lambda t: 0 < t[-1] < 0x20)
+    print(f"  cmd S: set count {t[-1] if t else '?'} "
+          f"{'ok' if t else 'FAIL (self-test must have counted)'}")
+    env_fail += t is None
+    sp.write(b"T")
+    t = scan_for(lambda t: len(t) >= 2 and (t[-2] << 8 | t[-1]) > 256)
+    if t:
+        print(f"  cmd T: oscillator window {(t[-2] << 8 | t[-1])} counts")
+    else:
+        print("  cmd T: no window count FAIL")
+        env_fail += 1
+
+    failures += env_fail
+    total = len(CAMPAIGN) + 3
+    print(f"campaign: {total - failures}/{total} paths ok")
     return failures == 0
 
 

@@ -123,7 +123,28 @@ module tt_um_hma_zirh2 #(
       .err_infra_o  (hk_infra),
       .evt_o        (hk_evt),
       .cpu_alive_o  (cpu_alive),
-      .wd_rst_o     (wd_rst)
+      .wd_rst_o     (wd_rst),
+      .env_ro_i     (env_ro_word),
+      .env_sb_i     (env_sb_word),
+      .env_start_o  (env_start),
+      .env_test_o   (env_test),
+      .clear_o      (hk_clear)
+  );
+
+  // --- environment monitor (TID oscillator, SET catcher, burst) ------------
+  wire [31:0] env_ro_word, env_sb_word;
+  wire        env_start, env_test, hk_clear, err_env;
+
+  zirh_env u_env (
+      .clk       (clk),
+      .rst_n     (rst_n_sys),
+      .start_i   (env_start),
+      .test_i    (env_test),
+      .clear_i   (hk_clear),
+      .evt_i     (hk_evt),
+      .ro_word_o (env_ro_word),
+      .sb_word_o (env_sb_word),
+      .err_o     (err_env)
   );
 
   // --- telemetry v2 ---------------------------------------------------------
@@ -159,7 +180,7 @@ module tt_um_hma_zirh2 #(
     else if (cpu_alive) cpu_alive_tgl <= ~cpu_alive_tgl;
   end
 
-  wire err_any = err_hb | err_soc | err_tlm | hk_infra;
+  wire err_any = err_hb | err_soc | err_tlm | hk_infra | err_env;
 
   assign uo_out = {hk_armed, evt_bus_to, evt_corr | evt_uncorr, uart_tx,
                    err_any, hk_evt, cpu_alive_tgl, heartbeat};

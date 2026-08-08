@@ -29,6 +29,13 @@
 //                    3 one B-replica, 4 all-B
 //   0x10 PLAIN   RO  0x14 RAW_A  0x18 ESC_A  0x1C RAW_B  0x20 ESC_B
 //   0x24 ECC_C   RO  0x28 ECC_U  0x2C BUS_TO  0x30 FERR  0x34 BOOT
+//   0x38 ENV_RO  RW  read {busy,15'h0,count}; write bit 0 = start a window
+//   0x3C ENV_SB  RW  read {16'h0,burst,set}; write bit 0 = SET self-test
+//
+// The 0x38/0x3C words belong to zirh_env (TID oscillator, SET catcher,
+// burst correlator); this block only decodes them - the one-shot strobes
+// and the full read words pass through so telemetry snapshot semantics
+// stay in one place and env keeps its own clock-domain island.
 //
 // CPU WATCHDOG: a TMR'd cycle counter clears on every firmware signature
 // write. If no write arrives for 2^WD_LIMIT_LOG2 cycles (~52 ms at the
@@ -82,7 +89,14 @@ module zirh_hk #(
     // live pulses for pins
     output wire        evt_o,           // any ring event
     output wire        cpu_alive_o,     // pulse per CPU_SIG write
-    output wire        wd_rst_o         // held 16 cycles: reset the SoC only
+    output wire        wd_rst_o,        // held 16 cycles: reset the SoC only
+
+    // environment monitor pass-through (regs 0x38/0x3C)
+    input  wire [31:0] env_ro_i,
+    input  wire [31:0] env_sb_i,
+    output wire        env_start_o,     // one-shot: write 0x38 bit 0
+    output wire        env_test_o,      // one-shot: write 0x3C bit 0
+    output wire        clear_o          // CTRL bit-8 clear, shared with env
 );
 
     localparam integer INJ_POS = N / 2;
@@ -104,6 +118,23 @@ module zirh_hk #(
         else        inj_seen <= wr_inj;
     end
     wire inj_fire = wr_inj & ~inj_seen;
+
+    // env strobes, same one-shot treatment
+    wire wr_env_e = wr & (reg_sel == 4'hE);
+    wire wr_env_f = wr & (reg_sel == 4'hF);
+    reg  env_e_seen, env_f_seen;
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            env_e_seen <= 1'b0;
+            env_f_seen <= 1'b0;
+        end else begin
+            env_e_seen <= wr_env_e;
+            env_f_seen <= wr_env_f;
+        end
+    end
+    assign env_start_o = wr_env_e & ~env_e_seen & dat_i[0];
+    assign env_test_o  = wr_env_f & ~env_f_seen & dat_i[0];
+    assign clear_o     = clear;
 
     wire inj_plain = inj_fire & (dat_i[2:0] == 3'd0);
     wire inj_a_one = inj_fire & (dat_i[2:0] == 3'd1);
@@ -332,6 +363,8 @@ module zirh_hk #(
         (reg_sel == 4'hB) ? {24'h0, c_busto} :
         (reg_sel == 4'hC) ? {24'h0, c_ferr}  :
         (reg_sel == 4'hD) ? {24'h0, boot_cnt} :
+        (reg_sel == 4'hE) ? env_ro_i :
+        (reg_sel == 4'hF) ? env_sb_i :
         32'h0;
 
     assign ack_o = cyc_i;
