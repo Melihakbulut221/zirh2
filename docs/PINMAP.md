@@ -1,4 +1,4 @@
-# ZIRH-2 pin map (REV 2, 2026-08-08; rev 1 frozen 2026-08-07)
+# ZIRH-2 pin map (REV 3, 2026-08-09; rev 2 2026-08-08, rev 1 frozen 2026-08-07)
 
 Principle carried over from ZIRH-1: the pins that remain are the ones
 that must work when the CPU does not. Everything else moved onto the
@@ -33,7 +33,7 @@ serve both chips.
 | uio[4] | SPW_DOUT | out | SpaceWire data out |
 | uio[5] | SPW_SOUT | out | SpaceWire strobe out |
 | uio[6] | - | in | unused |
-| uio[7] | - | in | unused |
+| uio[7] | TLM_MIRROR | out | CPU-untouchable telemetry mirror: 8N1 TTL serial at the main link's baud, frames only |
 
 Unused ui pins are deliberately NOT given functions: every input pin is
 an SET path into the die, and the CPU-era chip does not need them.
@@ -48,3 +48,13 @@ with one wire, SPW_DOUT/SOUT to SPW_DIN/SIN with two. All counters and
 state read over the UART command path ('k'/'K'/'w'/'W'); the telemetry
 frame is unchanged. ui bank and all uo pins: untouched from rev 1, so
 the one-cable ZIRH-1 bench compatibility stands.
+
+REV 3 (2026-08-09): the reboot-storm campaign measured a hole in the
+instrument-independence story - a deranged CPU can flood the shared
+UART and telemetry frames lose atomicity in the garbage. TLM_MIRROR
+(uio[7]) closes it: a transmit-only serial port fed directly by the
+TMR'd framer, on no bus, addressable by nothing. RS-232 or RS-422 off
+this pin is a transceiver choice on the bench, as it is for the main
+link - which completes the interface inventory: UART (main link),
+RS-232/RS-422 (either serial pin, by transceiver), CAN (uio[0:1]),
+SpaceWire (uio[2:5]).

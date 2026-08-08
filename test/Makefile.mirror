@@ -1,0 +1,21 @@
+# =============================================================================
+# ZIRH-2 - unit test for zirh_tlm_mirror
+#
+#   make -C test -f Makefile.mirror
+# =============================================================================
+
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRC_DIR = $(PWD)/../src
+
+SIM_BUILD = sim_build/mirror
+
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tlm_mirror.v
+
+TOPLEVEL = zirh_tlm_mirror
+COCOTB_TEST_MODULES = test_mirror
+
+# Keep in sync with DIV in test_mirror.py
+COMPILE_ARGS += -Pzirh_tlm_mirror.DIV=8
+
+include $(shell cocotb-config --makefiles)/Makefile.sim

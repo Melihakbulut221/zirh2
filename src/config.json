@@ -1,7 +1,7 @@
 {
   "//": "Only export pin area in LEF (without any connected nets)",
-  "//td": "measured to three DPL-0036s: 60 and 73 sat below the 76.8% reality, and 78 made legalization WORSE (40 -> 230 unplaced) - the wall was never the average density but the three chain-A macros parked mid-height, splitting every row they span into placement islands; they now sit flush with the bottom edge so the rows above stay contiguous, and with one site of cell padding with the N=32 shrink the padded area computes to ~82% of the core, so the target rides just above THAT - the physical cells still only occupy 77%, the difference IS the distributed slack",
-  "PL_TARGET_DENSITY_PCT": 84,
+  "//td": "measured to three DPL-0036s: 60 and 73 sat below the 76.8% reality, and 78 made legalization WORSE (40 -> 230 unplaced) - the wall was never the average density but the three chain-A macros parked mid-height, splitting every row they span into placement islands; they now sit flush with the bottom edge so the rows above stay contiguous, and with one site of cell padding at N=32 with two sites of padding the padded area computes to ~87% of the core, so the target rides just above THAT - one site left 30 repair cells homeless (down from 217), two finishes the job the shrink started - the physical cells still only occupy 77%, the difference IS the distributed slack",
+  "PL_TARGET_DENSITY_PCT": 88,
   "//clk": "25 MHz constraint: the chip runs at 20 MHz nominal and the old 50 MHz target made the post-CTS resizer inflate 1903 repair buffers into a full die (measured, DPL-0036)",
   "CLOCK_PERIOD": 40,
   "//postcts": "the post-CTS resizer repairs hold against PRE-ROUTE parasitic guesses and inflated ~1900 buffers into a 77%-full die - four DPL-0036s at that exact step, immune to density targets and macro placement (60/73/78/75, mid/bottom macros, all measured). Skipped: the post-GRT resizer does the same job against real routed parasitics and inserts what is actually needed; hold correctness is still gated by signoff STA",
@@ -10,7 +10,7 @@
   "//grthold": "with the pre-route repair off, the routed die closed at 81% with +23 ns setup but -122 ps hold across 2232 endpoints at the fast corner: the 0.05 margin asked the post-GRT resizer for too little. 0.25 makes it insert against a quarter-nanosecond target - setup has 23 ns to give and the die has 5 points of area",
   "//grtrun": "this flow ships RUN_POST_GRT_RESIZER_TIMING=false, so once the pre-route repair was off NO hold repair ran at all - two identical -122 ps results proved it (the margin knob was turning a wheel connected to nothing). Enabled: it repairs against real routed parasitics on a die with 23 ns of setup slack and 19% free area",
   "//pad": "GPL_CELL_PADDING was 0: global placement packed rows cheek to cheek, so the die's 19% free area pooled in useless clumps and every repair pass - pre-route with ~1900 cells, post-route with 1000+ - died in legalization for want of slots NEXT TO the nets being fixed. One site of padding distributes that free area beside every cell; DPL stays at 0 so the legalizer may still pack where it must",
-  "GPL_CELL_PADDING": 1,
+  "GPL_CELL_PADDING": 2,
   "RUN_POST_GRT_RESIZER_TIMING": true,
   "GRT_RESIZER_HOLD_SLACK_MARGIN": 0.1,
   "RUN_LINTER": 1,

@@ -38,6 +38,7 @@ PROJECT_SOURCES += zirh_env.v
 PROJECT_SOURCES += zirh_can.v
 PROJECT_SOURCES += zirh_spw.v
 PROJECT_SOURCES += zirh_ifc.v
+PROJECT_SOURCES += zirh_tlm_mirror.v
 PROJECT_SOURCES += tt_um_hma_zirh2.v
 
 ifneq ($(GATES),yes)

@@ -50,6 +50,7 @@ project:
     - "zirh_can.v"
     - "zirh_spw.v"
     - "zirh_ifc.v"
+    - "zirh_tlm_mirror.v"
     - "tt_um_hma_zirh2.v"
 
 # Frozen 2026-08-07, rationale in docs/ZIRH2-PINMAP.md.
@@ -82,7 +83,7 @@ pinout:
   uio[4]: "SPW_DOUT"
   uio[5]: "SPW_SOUT"
   uio[6]: ""
-  uio[7]: ""
+  uio[7]: "TLM_MIRROR"
 
 # Do not change!
 yaml_version: 6

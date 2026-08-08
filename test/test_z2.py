@@ -115,3 +115,58 @@ async def test_cpu_alive_pin_toggles(dut):
         if len(seen) == 2:
             break
     assert seen == {0, 1}, "CPU_ALIVE pin never toggled"
+
+
+def uio_bit(dut, i):
+    return 1 if str(dut.uio_out.value)[7 - i] == "1" else 0
+
+
+async def mirror_capture(dut, timeout_cycles=40_000):
+    for _ in range(timeout_cycles):
+        await RisingEdge(dut.clk)
+        await ReadOnly()
+        if uio_bit(dut, 7) == 0:
+            break
+    else:
+        return None
+    await ClockCycles(dut.clk, DIV // 2)
+    bits = []
+    for _ in range(9):
+        await ClockCycles(dut.clk, DIV)
+        await ReadOnly()
+        bits.append(uio_bit(dut, 7))
+    if bits[8] != 1:
+        return None
+    return sum(b << i for i, b in enumerate(bits[:8]))
+
+
+@cocotb.test()
+async def test_mirror_pin_speaks_pure_frames(dut):
+    """The telemetry mirror on uio[7] carries checksum-valid v2.1 frames
+    with a living CPU signature - the flood-proof second voice, verified
+    at the pin."""
+    await start(dut)
+    await ClockCycles(dut.clk, BOOT_CYCLES)
+
+    for _ in range(FRAME_LEN * 8):
+        b0 = await mirror_capture(dut)
+        if b0 != 0x5A:
+            continue
+        b1 = await mirror_capture(dut, 30 * DIV)
+        if b1 != 0x33:
+            continue
+        frame = [b0, b1]
+        for _ in range(FRAME_LEN - 2):
+            b = await mirror_capture(dut, 30 * DIV)
+            if b is None:
+                break
+            frame.append(b)
+        if len(frame) != FRAME_LEN:
+            continue
+        chk = 0
+        for b in frame[:19]:
+            chk ^= b
+        if frame[19] == chk:
+            assert frame[15] != 0, "mirror frame carries a dead CPU signature"
+            return
+    raise AssertionError("no valid frame ever crossed the mirror pin")

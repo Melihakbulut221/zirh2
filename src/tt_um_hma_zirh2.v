@@ -27,8 +27,9 @@
 //   uio[3] SPW_SIN     in   SpaceWire strobe in
 //   uio[4] SPW_DOUT    out  SpaceWire data out
 //   uio[5] SPW_SOUT    out  SpaceWire strobe out
-//   uio[6] -           in   unused
-//   uio[7] -           in   unused
+//   uio[6] -           in   unused (reserved)
+//   uio[7] TLM_MIRROR  out  CPU-untouchable telemetry mirror, 8N1 TTL
+//                           serial (RS-232/RS-422 by bench transceiver)
 // =============================================================================
 
 `default_nettype none
@@ -217,6 +218,17 @@ module tt_um_hma_zirh2 #(
       .err_o       (err_tlm)
   );
 
+  // --- telemetry mirror: the flood-proof second voice -----------------------
+  wire mirror_tx;
+
+  zirh_tlm_mirror #(.DIV(RESET_DIV)) u_mirror (
+      .clk          (clk),
+      .rst_n        (rst_n_sys),
+      .tlm_data_i   (tlm_data),
+      .tlm_strobe_i (tlm_valid & tlm_ready),
+      .tx_o         (mirror_tx)
+  );
+
   // --- pins -----------------------------------------------------------------
   reg cpu_alive_tgl;
   always @(posedge clk) begin
@@ -229,8 +241,8 @@ module tt_um_hma_zirh2 #(
   assign uo_out = {hk_armed, evt_bus_to, evt_corr | evt_uncorr, uart_tx,
                    err_any, hk_evt, cpu_alive_tgl, heartbeat};
 
-  assign uio_out = {2'b00, spw_sout, spw_dout, 1'b0, 1'b0, can_tx, 1'b0};
-  assign uio_oe  = 8'b0011_0010;
+  assign uio_out = {mirror_tx, 1'b0, spw_sout, spw_dout, 1'b0, 1'b0, can_tx, 1'b0};
+  assign uio_oe  = 8'b1011_0010;
 
   wire _unused = &{ena, ui_in[7:4], ui_in[2:0], uio_in[7:6],
                    uio_in[5:4], uio_in[1], tick16, tick256, 1'b0};
