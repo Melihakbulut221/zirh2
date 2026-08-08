@@ -1,7 +1,9 @@
 {
   "//": "Only export pin area in LEF (without any connected nets)",
-  "PL_TARGET_DENSITY_PCT": 60,
-  "CLOCK_PERIOD": 20,
+  "//td": "interfaces pull-in: movable area is 76% of the core, so a 60% spread target gave the placer an impossible goal and DPL-0036 followed (measured); 73 matches reality with legalization headroom",
+  "PL_TARGET_DENSITY_PCT": 73,
+  "//clk": "25 MHz constraint: the chip runs at 20 MHz nominal and the old 50 MHz target made the post-CTS resizer inflate 1903 repair buffers into a full die (measured, DPL-0036)",
+  "CLOCK_PERIOD": 40,
   "PL_RESIZER_HOLD_SLACK_MARGIN": 0.1,
   "GRT_RESIZER_HOLD_SLACK_MARGIN": 0.05,
   "RUN_LINTER": 1,
