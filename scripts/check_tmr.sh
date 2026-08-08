@@ -233,12 +233,31 @@ run_check "zirh_env      (TID + SET + burst)" \
     zirh_env 9 125 zirh_tmr_ff \
     zirh_tmr_lib.v zirh_env.v
 
-# --- check 13: the ZIRH-2 top -----------------------------------------------
-# FFs: soc 2156 + hk 933 + tlm2 213 + env 125 + clk_rst 79 + glue = 3509.
-# Replicas: v2.1's 40 + env's two NEW width definitions (11 and 5) x 3;
-# env's width-8 regs reuse a definition already counted under hk.
+# --- check 13: the CAN node --------------------------------------------------
+# zirh_can: TX + RX protocol FSM (WIDTH=3, shared definition) + three 8-bit
+# counters (shared WIDTH=8 definition) = 2 definitions x 3 = 6 cells.
+run_check "zirh_can      (protocol FSMs + counters)" \
+    zirh_can 6 220 zirh_tmr_ff \
+    zirh_tmr_lib.v zirh_can.v
+
+# --- check 14: the SpaceWire link --------------------------------------------
+# zirh_spw: link FSM (3) + NULL and error counters (8) = 2 defs x 3 = 6.
+run_check "zirh_spw      (link FSM + counters)" \
+    zirh_spw 6 151 zirh_tmr_ff \
+    zirh_tmr_lib.v zirh_spw.v
+
+# --- check 15: the interface block -------------------------------------------
+# zirh_ifc: can + spw definitions plus the WIDTH=1 link-enable = 3 defs x 3.
+run_check "zirh_ifc      (CAN + SpW + bus regs)" \
+    zirh_ifc 9 376 zirh_tmr_ff \
+    zirh_tmr_lib.v zirh_can.v zirh_spw.v zirh_ifc.v
+
+# --- check 16: the ZIRH-2 top -----------------------------------------------
+# FFs: soc 2156 + hk 933 + tlm2 213 + env 125 + ifc 376 + clk_rst 79
+# + glue = 3885. Replicas: v2.2's 46 + the ifc's one NEW definition
+# (WIDTH=3 FSM states) x 3 = 49; widths 1 and 8 reuse existing defs.
 run_check "tt_um_hma_zirh2 (ZIRH-2 top)" \
-    tt_um_hma_zirh2 46 3509 zirh_tmr_ff \
+    tt_um_hma_zirh2 49 3885 zirh_tmr_ff \
     serv/serv_aligner.v serv/serv_alu.v serv/serv_bufreg2.v \
     serv/serv_bufreg.v serv/serv_compdec.v serv/serv_csr.v \
     serv/serv_ctrl.v serv/serv_decode.v serv/serv_immdec.v \
@@ -246,7 +265,8 @@ run_check "tt_um_hma_zirh2 (ZIRH-2 top)" \
     serv/serv_rf_ram.v serv/serv_rf_top.v serv/serv_state.v \
     serv/serv_top.v zirh_tmr_lib.v zirh_tmr_ff64.v zirh_clk_rst.v \
     zirh_rom.v zirh_bus.v zirh_ecc_ram.v zirh_rs422.v zirh_uart_regs.v \
-    zirh_soc.v zirh_hk.v zirh_tlm2.v zirh_env.v tt_um_hma_zirh2.v
+    zirh_soc.v zirh_hk.v zirh_tlm2.v zirh_env.v zirh_can.v zirh_spw.v \
+    zirh_ifc.v tt_um_hma_zirh2.v
 EXTRA_CMDS=""
 
 echo "------------------------------"

@@ -111,6 +111,27 @@ int main(void)
                 HK_ENV_SB = 1u;   /* fire a pulse down the SET chain */
                 tx_byte('e');
             }
+            else if (b == 'k') {
+                /* one CAN beacon; payload = low loop-count byte */
+                IFC_CAN_CTRL = ((count & 0xFFu) << 8) | 1u;
+                tx_byte('b');
+            }
+            else if (b == 'K') {
+                uint32_t r = IFC_CAN_STAT;
+                tx_byte((uint8_t)(r >> 8));    /* rx_ok  */
+                tx_byte((uint8_t)(r >> 16));   /* errors */
+            }
+            else if (b == 'w') {
+                /* link enable + queue one 0xA5 data char */
+                IFC_SPW_CTRL = (0xA5u << 8) | 3u;
+                tx_byte('y');
+            }
+            else if (b == 'W') {
+                uint32_t r = IFC_SPW_STAT;
+                tx_byte((uint8_t)(r & 7u));    /* link state  */
+                tx_byte((uint8_t)(r >> 24));   /* rx char     */
+                tx_byte((uint8_t)(r >> 16));   /* errors      */
+            }
             else
                 tx_byte((uint8_t)(b + 1u));
         }

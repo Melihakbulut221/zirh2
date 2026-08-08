@@ -27,5 +27,9 @@
 #define HK_ENV_RO  REG32(HK_BASE + 0x38)
 #define HK_ENV_SB  REG32(HK_BASE + 0x3C)
 #define ENV_RO_BUSY (1u << 31)
+#define IFC_CAN_STAT REG32(HK_BASE + 0x40)
+#define IFC_CAN_CTRL REG32(HK_BASE + 0x44)
+#define IFC_SPW_STAT REG32(HK_BASE + 0x48)
+#define IFC_SPW_CTRL REG32(HK_BASE + 0x4C)
 
 #endif

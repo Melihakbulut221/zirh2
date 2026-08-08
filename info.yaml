@@ -47,6 +47,9 @@ project:
     - "zirh_hk.v"
     - "zirh_tlm2.v"
     - "zirh_env.v"
+    - "zirh_can.v"
+    - "zirh_spw.v"
+    - "zirh_ifc.v"
     - "tt_um_hma_zirh2.v"
 
 # Frozen 2026-08-07, rationale in docs/ZIRH2-PINMAP.md.
@@ -72,12 +75,12 @@ pinout:
   uo[7]: "ARMED"
 
   # Bidirectional pins
-  uio[0]: ""
-  uio[1]: ""
-  uio[2]: ""
-  uio[3]: ""
-  uio[4]: ""
-  uio[5]: ""
+  uio[0]: "CAN_RX"
+  uio[1]: "CAN_TX"
+  uio[2]: "SPW_DIN"
+  uio[3]: "SPW_SIN"
+  uio[4]: "SPW_DOUT"
+  uio[5]: "SPW_SOUT"
   uio[6]: ""
   uio[7]: ""
 

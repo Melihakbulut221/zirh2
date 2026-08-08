@@ -289,8 +289,28 @@ def campaign(sp, sess, dec, pump):
         print("  cmd T: no window count FAIL")
         env_fail += 1
 
+    # interface probes: CAN beacon must self-ack on a looped bench, the
+    # SpaceWire link must reach Run (state 5) with the char round-tripped
+    sp.write(b"k")
+    if scan_for(lambda t: t[-1] == ord("b")) is None:
+        print("  cmd k: no beacon ack FAIL")
+        env_fail += 1
+    sp.write(b"K")
+    t = scan_for(lambda t: 0 < t[-1] < 0x20)
+    print(f"  cmd K: CAN rx_ok {t[-1] if t else '?'} "
+          f"{'ok' if t else 'FAIL (loop the CAN pins?)'}")
+    env_fail += t is None
+    sp.write(b"w")
+    if scan_for(lambda t: t[-1] == ord("y")) is None:
+        print("  cmd w: no link ack FAIL")
+        env_fail += 1
+    sp.write(b"W")
+    t = scan_for(lambda t: t[-1] == 5)
+    print(f"  cmd W: SpW state {'Run ok' if t else 'FAIL (loop the SpW pins?)'}")
+    env_fail += t is None
+
     failures += env_fail
-    total = len(CAMPAIGN) + 3
+    total = len(CAMPAIGN) + 7
     print(f"campaign: {total - failures}/{total} paths ok")
     return failures == 0
 

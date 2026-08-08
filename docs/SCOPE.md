@@ -356,3 +356,47 @@ combinational loop hangs event-driven simulation, and gate-level runs
 keep the real cells but must never enable the oscillator - the 'T'
 exercise is RTL-and-silicon only. A dead env block leaves 'T' busy-wait
 stuck by design: the CPU watchdog converts that into a counted reboot.
+
+
+## P1/P2 interfaces pulled in (2026-08-08)
+
+Directed decision: the two interfaces the scope had staged as P1
+(zirh_can) and P2 (SpaceWire-lite) are now on ZIRH-2, as beam
+experiments rather than communication conveniences. The literature
+angle that shaped both: fault-tolerant protocol-FSM work pairs TMR with
+SAFE-STATE ENCODING - unreachable state codes must fall into a recovery
+state instead of wedging (the fault-tolerant FSM literature's standard
+prescription, e.g. the OpenCores fault-tolerant state machine treatment
+and the UAV FSM description-style studies); SpaceWire fault-tolerance
+work (Fault tolerant implementation of a SpaceWire interface) layers
+modular redundancy with protocol-level information redundancy. Both
+cores do exactly that: every protocol FSM is a TMR register with voted
+feedback (single-replica hits heal in a cycle, counted by ERR_TMR) plus
+a default-case trap - zirh_spw's two illegal encodings land in
+ErrorReset, the state the standard itself designates for recovery;
+zirh_can's traps land in idle/bus-integration. Datapath shift registers
+and serial CRCs stay PLAIN on purpose: they are the beam targets, and
+the error counters exist to count what the beam does to them.
+
+zirh_can (CAN 2.0A-lite, 2 pins): standard data frames bit-faithful
+through SOF/ID/DLC/data/CRC-15/ACK/EOF with stuffing and stuff-error
+detection; no arbitration, retransmission, error frames or extended
+IDs (one node on a bench loop). The receiver arms only after the
+standard's 11-recessive-bit integration, which doubles as the
+quiet-bench property. The wired-AND self-ACK over one loopback wire is
+what a two-node bus reduces to. Unit suite judges the wire bits against
+an independent Python model of the framing.
+
+zirh_spw (SpaceWire-lite, 4 pins): the full six-state link FSM in the
+standard's order, NULL/FCT connect handshake, data characters with the
+spanning odd parity, parity/escape/disconnect errors, self-recovery
+back to Run. No time-codes, credit, or packets. Unit suite pins the
+state sequence, round-trips characters, and proves both the traps and
+the replica healing.
+
+Both read over the UART command path ('k' beacon / 'K' CAN counters /
+'w' link+char / 'W' SpW state); frame v2.1 untouched. Utilization is
+the open risk of this pull-in: the two cores plus the ifc register
+block add roughly 500 flops to a die that closed at 78.5% - the gds
+run after this lands is the arbiter, and the recorded fallback is
+shrinking the monitor rings to N=48 before cutting either interface.

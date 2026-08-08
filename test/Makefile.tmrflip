@@ -23,6 +23,9 @@ VERILOG_SOURCES += $(SRC_DIR)/zirh_soc.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_hk.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_tlm2.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_env.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_can.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_spw.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_ifc.v
 VERILOG_SOURCES += $(SRC_DIR)/tt_um_hma_zirh2.v
 
 TOPLEVEL = tt_um_hma_zirh2

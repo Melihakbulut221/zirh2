@@ -235,3 +235,59 @@ async def test_env_commands_read_the_sensors(dut):
             break
     else:
         raise AssertionError(f"no plausible window count in {got}")
+
+
+@cocotb.test()
+async def test_interface_commands_run_the_links(dut):
+    """CAN and SpaceWire over the command path with both links looped
+    back in the bench topology: 'k' fires a beacon that self-ACKs and
+    lands in the receiver, 'w' brings the SpaceWire link to Run and
+    round-trips a character. Counters are read hierarchically (RTL);
+    under GATES only the command acks are in reach. Skips itself on a
+    mask that predates the interface commands ('k' echoes 'l')."""
+    await start(dut)
+
+    async def loop_wires():
+        while True:
+            await RisingEdge(dut.clk)
+            await ReadOnly()
+            u = int(dut.uio_out.value)
+            await RisingEdge(dut.clk)
+            # CAN_TX -> CAN_RX, SPW_DOUT/SOUT -> SPW_DIN/SIN
+            dut.uio_in.value = ((u >> 1) & 1) | (((u >> 4) & 1) << 2) | \
+                               (((u >> 5) & 1) << 3)
+    cocotb.start_soon(loop_wires())
+    await ClockCycles(dut.clk, BOOT_CYCLES)
+
+    await _uart_send(dut, ord('k'))
+    for _ in range(40):
+        b = await uart_capture(dut, TLM_INTERVAL + 40_000)
+        if b == ord('b'):
+            break
+        if b == ord('k') + 1:
+            cocotb.pass_test("mask predates the interface commands")
+            return
+    else:
+        raise AssertionError("'k' neither acked nor echoed")
+
+    await _uart_send(dut, ord('w'))
+    for _ in range(40):
+        b = await uart_capture(dut, TLM_INTERVAL + 40_000)
+        if b == ord('y'):
+            break
+    else:
+        raise AssertionError("'w' never acked")
+
+    # frame time for the beacon and handshake time for the link
+    await ClockCycles(dut.clk, 12_000)
+
+    if os.getenv("GATES") == "yes":
+        return   # no hierarchy to peek at in the flattened netlist
+
+    ifc = dut.user_project.u_ifc
+    assert int(ifc.u_can.rx_ok_cnt_o.value) >= 1, "CAN beacon never received"
+    assert int(ifc.u_can.err_cnt_o.value) == 0, "CAN errors on a clean loop"
+    assert int(ifc.u_spw.state_o.value) == 5, (
+        f"SpaceWire link not in Run: state "
+        f"{int(ifc.u_spw.state_o.value)}")
+    assert int(ifc.u_spw.rx_char_o.value) == 0xA5, "SpW char lost"

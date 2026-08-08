@@ -1,4 +1,4 @@
-# ZIRH-2 pin map (FROZEN 2026-08-07)
+# ZIRH-2 pin map (REV 2, 2026-08-08; rev 1 frozen 2026-08-07)
 
 Principle carried over from ZIRH-1: the pins that remain are the ones
 that must work when the CPU does not. Everything else moved onto the
@@ -26,9 +26,25 @@ serve both chips.
 | uo[5] | ECC_EVT | out | ECC RAM corrected or uncorrected event |
 | uo[6] | BUS_TIMEOUT | out | bus watchdog fired |
 | uo[7] | ARMED | out | monitor warm-up complete |
-| uio[7:0] | - | in | unused, held as inputs (reserved for ZIRH-3) |
+| uio[0] | CAN_RX | in | CAN bus level, 1 = recessive; bench loopback from CAN_TX |
+| uio[1] | CAN_TX | out | wired-AND CAN drive: beacons plus the receiver's ACK pull |
+| uio[2] | SPW_DIN | in | SpaceWire data in |
+| uio[3] | SPW_SIN | in | SpaceWire strobe in |
+| uio[4] | SPW_DOUT | out | SpaceWire data out |
+| uio[5] | SPW_SOUT | out | SpaceWire strobe out |
+| uio[6] | - | in | unused |
+| uio[7] | - | in | unused |
 
 Unused ui pins are deliberately NOT given functions: every input pin is
-an SET path into the die, and the CPU-era chip does not need them. The
-uio bank stays input-only (no RD_DATA bus as on ZIRH-1 - counter
-readout goes over telemetry and the bus).
+an SET path into the die, and the CPU-era chip does not need them.
+
+REV 2 (2026-08-08): the uio bank, reserved for ZIRH-3 in rev 1, now
+carries the two interface experiments pulled forward from the P1/P2
+scope - CAN 2.0A-lite (2 pins, exactly the budget the scope recorded)
+and SpaceWire-lite (4 pins: single-ended Data-Strobe both directions;
+the standard's LVDS pairs are not a thing TT pads can do, which is one
+reason it is -lite). Both are loopback bench links: CAN_TX to CAN_RX
+with one wire, SPW_DOUT/SOUT to SPW_DIN/SIN with two. All counters and
+state read over the UART command path ('k'/'K'/'w'/'W'); the telemetry
+frame is unchanged. ui bank and all uo pins: untouched from rev 1, so
+the one-cable ZIRH-1 bench compatibility stands.

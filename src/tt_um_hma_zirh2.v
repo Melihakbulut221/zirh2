@@ -21,7 +21,14 @@
 //   uo[5]  ECC_EVT      ECC RAM corrected/uncorrected event
 //   uo[6]  BUS_TIMEOUT  bus watchdog fired (firmware touched a dead slot)
 //   uo[7]  ARMED        monitor warm-up done
-//   uio    unused, inputs
+//   uio[0] CAN_RX      in   CAN bus level (1 = recessive); bench loopback
+//   uio[1] CAN_TX      out  wired-AND CAN drive (beacons + RX ACK pull)
+//   uio[2] SPW_DIN     in   SpaceWire data in
+//   uio[3] SPW_SIN     in   SpaceWire strobe in
+//   uio[4] SPW_DOUT    out  SpaceWire data out
+//   uio[5] SPW_SOUT    out  SpaceWire strobe out
+//   uio[6] -           in   unused
+//   uio[7] -           in   unused
 // =============================================================================
 
 `default_nettype none
@@ -30,7 +37,13 @@ module tt_um_hma_zirh2 #(
     parameter ROM_HEX = "",
     parameter INTERVAL_LOG2 = 16,
     parameter RESET_DIV = 174,
-    parameter WD_LIMIT_LOG2 = 20
+    parameter WD_LIMIT_LOG2 = 20,
+    parameter CAN_DIV = 40,
+    parameter SPW_DIV = 4,
+    parameter SPW_T_RESET = 32,
+    parameter SPW_T_WAIT  = 64,
+    parameter SPW_T_CONN  = 64,
+    parameter SPW_T_DISC  = 8
 ) (
     input  wire [7:0] ui_in,
     output wire [7:0] uo_out,
@@ -94,15 +107,21 @@ module tt_um_hma_zirh2 #(
   wire [1:0]  hk_mode;
   wire        hk_armed, hk_infra, hk_evt, cpu_alive;
 
+  wire s3_ifc   = s3_adr[6];
+  wire [31:0] hk_rdt, ifc_rdt;
+  wire hk_ack, ifc_ack;
+  assign s3_rdt = s3_ifc ? ifc_rdt : hk_rdt;
+  assign s3_ack = s3_ifc ? ifc_ack : hk_ack;
+
   zirh_hk #(.WD_LIMIT_LOG2(WD_LIMIT_LOG2)) u_hk (
       .clk          (clk),
       .rst_n        (rst_n_sys),
-      .cyc_i        (s3_cyc),
+      .cyc_i        (s3_cyc & ~s3_ifc),
       .adr_i        (s3_adr),
       .dat_i        (s3_dat),
       .we_i         (s3_we),
-      .rdt_o        (s3_rdt),
-      .ack_o        (s3_ack),
+      .rdt_o        (hk_rdt),
+      .ack_o        (hk_ack),
       .ecc_corr_i   (evt_corr),
       .ecc_uncorr_i (evt_uncorr),
       .bus_to_i     (evt_bus_to),
@@ -129,6 +148,31 @@ module tt_um_hma_zirh2 #(
       .env_start_o  (env_start),
       .env_test_o   (env_test),
       .clear_o      (hk_clear)
+  );
+
+  // --- interface experiments (slot 3 upper half) ----------------------------
+  wire can_tx, spw_dout, spw_sout, err_ifc;
+
+  zirh_ifc #(
+      .CAN_DIV(CAN_DIV), .SPW_DIV(SPW_DIV),
+      .SPW_T_RESET(SPW_T_RESET), .SPW_T_WAIT(SPW_T_WAIT),
+      .SPW_T_CONN(SPW_T_CONN), .SPW_T_DISC(SPW_T_DISC)
+  ) u_ifc (
+      .clk       (clk),
+      .rst_n     (rst_n_sys),
+      .cyc_i     (s3_cyc & s3_ifc),
+      .adr_i     (s3_adr),
+      .dat_i     (s3_dat),
+      .we_i      (s3_we),
+      .rdt_o     (ifc_rdt),
+      .ack_o     (ifc_ack),
+      .can_rx_i  (uio_in[0]),
+      .can_tx_o  (can_tx),
+      .spw_din_i (uio_in[2]),
+      .spw_sin_i (uio_in[3]),
+      .spw_dout_o(spw_dout),
+      .spw_sout_o(spw_sout),
+      .err_tmr_o (err_ifc)
   );
 
   // --- environment monitor (TID oscillator, SET catcher, burst) ------------
@@ -180,16 +224,16 @@ module tt_um_hma_zirh2 #(
     else if (cpu_alive) cpu_alive_tgl <= ~cpu_alive_tgl;
   end
 
-  wire err_any = err_hb | err_soc | err_tlm | hk_infra | err_env;
+  wire err_any = err_hb | err_soc | err_tlm | hk_infra | err_env | err_ifc;
 
   assign uo_out = {hk_armed, evt_bus_to, evt_corr | evt_uncorr, uart_tx,
                    err_any, hk_evt, cpu_alive_tgl, heartbeat};
 
-  assign uio_out = 8'h00;
-  assign uio_oe  = 8'h00;
+  assign uio_out = {2'b00, spw_sout, spw_dout, 1'b0, 1'b0, can_tx, 1'b0};
+  assign uio_oe  = 8'b0011_0010;
 
-  wire _unused = &{ena, ui_in[7:4], ui_in[2:0], uio_in,
-                   tick16, tick256, 1'b0};
+  wire _unused = &{ena, ui_in[7:4], ui_in[2:0], uio_in[7:6],
+                   uio_in[5:4], uio_in[1], tick16, tick256, 1'b0};
 
 endmodule
 

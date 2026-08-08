@@ -1,0 +1,22 @@
+# =============================================================================
+# ZIRH-2 - unit test for zirh_can (CAN 2.0A-lite, fast bit clock)
+#
+#   make -C test -f Makefile.can
+# =============================================================================
+
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRC_DIR = $(PWD)/../src
+
+SIM_BUILD = sim_build/can
+
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_lib.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_can.v
+
+TOPLEVEL = zirh_can
+COCOTB_TEST_MODULES = test_can
+
+# Keep in sync with DIV in test_can.py
+COMPILE_ARGS += -Pzirh_can.CAN_DIV=8
+
+include $(shell cocotb-config --makefiles)/Makefile.sim

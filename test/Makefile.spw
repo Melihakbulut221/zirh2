@@ -1,0 +1,26 @@
+# =============================================================================
+# ZIRH-2 - unit test for zirh_spw (SpaceWire-lite, shortened timers)
+#
+#   make -C test -f Makefile.spw
+# =============================================================================
+
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRC_DIR = $(PWD)/../src
+
+SIM_BUILD = sim_build/spw
+
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_lib.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_spw.v
+
+TOPLEVEL = zirh_spw
+COCOTB_TEST_MODULES = test_spw
+
+# Keep in sync with the constants in test_spw.py
+COMPILE_ARGS += -Pzirh_spw.SPW_DIV=4
+COMPILE_ARGS += -Pzirh_spw.T_RESET=8
+COMPILE_ARGS += -Pzirh_spw.T_WAIT=8
+COMPILE_ARGS += -Pzirh_spw.T_CONN=64
+COMPILE_ARGS += -Pzirh_spw.T_DISC=8
+
+include $(shell cocotb-config --makefiles)/Makefile.sim
