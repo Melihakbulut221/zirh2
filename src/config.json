@@ -1,7 +1,7 @@
 {
   "//": "Only export pin area in LEF (without any connected nets)",
-  "//td": "interfaces pull-in: effective utilization is 76.8%, and a target BELOW reality (60, then 73 - both measured to DPL-0036) hands global placement an impossible spread goal; the target must sit ABOVE actual utilization so legalization and the post-CTS hold-repair buffers have coherent headroom",
-  "PL_TARGET_DENSITY_PCT": 78,
+  "//td": "measured to three DPL-0036s: 60 and 73 sat below the 76.8% reality, and 78 made legalization WORSE (40 -> 230 unplaced) - the wall was never the average density but the three chain-A macros parked mid-height, splitting every row they span into placement islands; they now sit flush with the bottom edge so the rows above stay contiguous, and 75 rides just under reality with the fragmentation gone",
+  "PL_TARGET_DENSITY_PCT": 75,
   "//clk": "25 MHz constraint: the chip runs at 20 MHz nominal and the old 50 MHz target made the post-CTS resizer inflate 1903 repair buffers into a full die (measured, DPL-0036)",
   "CLOCK_PERIOD": 40,
   "PL_RESIZER_HOLD_SLACK_MARGIN": 0.1,
@@ -46,21 +46,21 @@
         "u_hk.g_a_macro.u_ff_a": {
           "location": [
             100,
-            90
+            7.56
           ],
           "orientation": "N"
         },
         "u_hk.g_a_macro.u_ff_b": {
           "location": [
             800,
-            90
+            7.56
           ],
           "orientation": "N"
         },
         "u_hk.g_a_macro.u_ff_c": {
           "location": [
             1480,
-            90
+            7.56
           ],
           "orientation": "N"
         }
