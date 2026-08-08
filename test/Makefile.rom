@@ -18,4 +18,9 @@ COCOTB_TEST_MODULES = test_rom
 COMPILE_ARGS += -Pzirh_rom.HEX=\"$(PWD)/rom_fixture.hex\"
 
 COMPILE_ARGS += -I$(SRC_DIR)
+# rom_init.vh is an include, invisible to VERILOG_SOURCES: without this extra
+# dependency a regenerated ROM silently reuses a stale sim.vvp (measured -
+# the old mask kept answering the old checksum after a firmware rebuild)
+CUSTOM_COMPILE_DEPS += $(SRC_DIR)/rom_init.vh
+
 include $(shell cocotb-config --makefiles)/Makefile.sim

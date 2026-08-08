@@ -17,7 +17,7 @@ CLK_NS = 40
 DIV = 20
 BAUD = int(1e9 / CLK_NS / DIV)
 
-BOOT_CYCLES = 30_000   # crt0 zero-fill + reaching the main loop, bit-serial
+BOOT_CYCLES = 120_000  # crt0 zero-fill + the boot ROM-checksum loop, bit-serial
 
 
 async def start(dut):

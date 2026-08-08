@@ -71,4 +71,9 @@ TOPLEVEL = tb
 COCOTB_TEST_MODULES = test
 
 # include cocotb's make rules to take care of the simulator setup
+# rom_init.vh is an include, invisible to VERILOG_SOURCES: without this extra
+# dependency a regenerated ROM silently reuses a stale sim.vvp (measured -
+# the old mask kept answering the old checksum after a firmware rebuild)
+CUSTOM_COMPILE_DEPS += $(SRC_DIR)/rom_init.vh
+
 include $(shell cocotb-config --makefiles)/Makefile.sim
