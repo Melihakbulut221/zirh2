@@ -1,0 +1,34 @@
+# =============================================================================
+# ZIRH-2 - top-level RF fault campaign (RTL only: parameter overrides)
+#
+#   make -C test -f Makefile.campaign
+# =============================================================================
+
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRC_DIR = $(PWD)/../src
+
+SIM_BUILD = sim_build/campaign
+
+VERILOG_SOURCES += $(wildcard $(SRC_DIR)/serv/serv_*.v)
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_lib.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_ff64.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_clk_rst.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_rom.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_bus.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_ecc_ram.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_rs422.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_uart_regs.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_soc.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_hk.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tlm2.v
+VERILOG_SOURCES += $(SRC_DIR)/tt_um_hma_zirh2.v
+
+TOPLEVEL = tt_um_hma_zirh2
+COCOTB_TEST_MODULES = test_campaign
+
+# Keep in sync with WD_LIMIT in test_campaign.py
+COMPILE_ARGS += -Ptt_um_hma_zirh2.WD_LIMIT_LOG2=17
+COMPILE_ARGS += -I$(SRC_DIR)
+
+include $(shell cocotb-config --makefiles)/Makefile.sim

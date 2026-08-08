@@ -189,9 +189,12 @@ run_check "zirh_ecc_ram  (SECDED, no TMR by design)" \
 #   12 replica instances = uart_regs 9 + bus watchdog 3.
 #   FFs: SERV core+RF 1253 (RF 32x32 = 1024, PLAIN - the honest v1 story:
 #   the CPU is itself a beam target) + eram 1250 + uregs 224 + bus 19
-#   + glue 35 (incl. the cpu_awake X-gate), eram at 64 B = 2156.
+#   + glue 35 (incl. the cpu_awake X-gate), eram at 64 B = 2158.
+#   NOTE: this number is FIRMWARE-DEPENDENT - the ROM contents are real
+#   constants and SERV optimizes against them, so a firmware change can
+#   legitimately move it by a few flops. Update it together with rom_init.vh.
 run_check "zirh_soc      (SERV + P0 cluster)" \
-    zirh_soc 12 2156 zirh_tmr_ff \
+    zirh_soc 12 2158 zirh_tmr_ff \
     serv/serv_aligner.v serv/serv_alu.v serv/serv_bufreg2.v \
     serv/serv_bufreg.v serv/serv_compdec.v serv/serv_csr.v \
     serv/serv_ctrl.v serv/serv_decode.v serv/serv_immdec.v \
@@ -202,24 +205,24 @@ run_check "zirh_soc      (SERV + P0 cluster)" \
 EXTRA_CMDS=""
 
 # --- check 10: the ZIRH-2 housekeeping block --------------------------------
-# zirh_hk at N=64: 22 replica instances (A-chain 3 via zirh_tmr_ff64 +
-# B-chain 3 direct + 7 tmr_regs of counters/infra). FFs: rings 7x64=448
-# + counters 288 + infra/err/misc 52 = 788.
+# zirh_hk at N=64 with the v2.1 additions (bus-timeout, frame-error and
+# BOOT counters + the CPU watchdog): 25 replica-bearing paramods x
+# instances. FFs: rings 448 + counters 363 + watchdog 67 + infra/misc = 931.
 run_check "zirh_hk       (A/B chains + counters)" \
-    zirh_hk 22 788 zirh_tmr_ff \
+    zirh_hk 25 931 zirh_tmr_ff \
     zirh_tmr_lib.v zirh_tmr_ff64.v zirh_hk.v
 
 # --- check 11: the telemetry framer v2 --------------------------------------
 # zirh_tlm2 at INTERVAL_LOG2=16: interval 16 + state 6 = 2 paramods x 3 = 6
 # instances. FFs: 22x3 TMR = 66 + 2 err + 121 snapshot/seq/chk = 189.
 run_check "zirh_tlm2     (framer v2 replicas)" \
-    zirh_tlm2 6 189 zirh_tmr_ff \
+    zirh_tlm2 6 213 zirh_tmr_ff \
     zirh_tmr_lib.v zirh_tlm2.v
 
 # --- check 12: the ZIRH-2 top -----------------------------------------------
-# FFs: soc 2156 + hk 788 + tlm2 189 + clk_rst 79 + glue 1 = 3213.
+# FFs: soc 2156 + hk 931 + tlm2 213 + clk_rst 79 + glue = 3382.
 run_check "tt_um_hma_zirh2 (ZIRH-2 top)" \
-    tt_um_hma_zirh2 37 3213 zirh_tmr_ff \
+    tt_um_hma_zirh2 40 3382 zirh_tmr_ff \
     serv/serv_aligner.v serv/serv_alu.v serv/serv_bufreg2.v \
     serv/serv_bufreg.v serv/serv_compdec.v serv/serv_csr.v \
     serv/serv_ctrl.v serv/serv_decode.v serv/serv_immdec.v \

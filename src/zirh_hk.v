@@ -272,7 +272,7 @@ module zirh_hk #(
         else if (wd_fire) wd_hold <= 4'hF;
         else if (|wd_hold) wd_hold <= wd_hold - 4'h1;
     end
-    assign wd_rst_o = |wd_hold;
+    assign wd_rst_o = wd_fire | (|wd_hold);   // fire cycle + 15 = 16
 
     // --- CPU signature (plain: firmware rewrites it constantly) -------------
     reg [7:0] cpu_sig;

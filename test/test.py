@@ -14,9 +14,10 @@ from cocotb.triggers import ClockCycles, RisingEdge, ReadOnly
 
 CLK_NS = 40
 DIV = 174
-FRAME_LEN = 17
+FRAME_LEN = 20
 TLM_INTERVAL = 1 << 16
-BOOT_CYCLES = 30_000
+ROM_SUM = 0xEA   # XOR-fold of the committed rom_init.vh, computed offline
+BOOT_CYCLES = 120_000   # crt0 + the 256-word ROM checksum loop, bit-serial
 
 UART_TX_BIT = 4
 CPU_ALIVE_BIT = 1
@@ -65,7 +66,7 @@ async def capture_frame(dut, timeout_cycles=TLM_INTERVAL + 40_000):
         if b0 != 0x5A:
             continue
         b1 = await uart_capture(dut, 30 * DIV)
-        if b1 == 0x32:
+        if b1 == 0x33:
             frame = [b0, b1]
             for _ in range(FRAME_LEN - 2):
                 frame.append(await uart_capture(dut, 30 * DIV))
@@ -82,9 +83,9 @@ async def test_frame_carries_a_living_cpu(dut):
 
     f1 = await capture_frame(dut)
     chk = 0
-    for b in f1[:16]:
+    for b in f1[:19]:
         chk ^= b
-    assert f1[16] == chk, f"checksum {f1[16]:#04x} != {chk:#04x}"
+    assert f1[19] == chk, f"checksum {f1[19]:#04x} != {chk:#04x}"
 
     status = f1[2]
     assert (status >> 3) & 1 == 1, "armed must be set"
@@ -92,6 +93,8 @@ async def test_frame_carries_a_living_cpu(dut):
     assert f1[3:13] == [0] * 10, f"beam counters must be zero: {f1[3:13]}"
     assert f1[13] == 0 and f1[14] == 0, "no ECC events expected"
     assert f1[15] != 0, "CPU signature is zero - firmware never reached hk"
+    assert f1[16] == 0, "BOOT must be zero - the watchdog must not have fired"
+    assert f1[17] == 0 and f1[18] == 0, "no bus timeouts or frame errors"
 
     f2 = await capture_frame(dut)
     assert f2[15] != f1[15], (
@@ -142,3 +145,38 @@ async def test_echo_plus_one(dut):
             break
     else:
         raise AssertionError("echo answer 0x42 never appeared on the line")
+
+
+@cocotb.test()
+async def test_uart_commands_drive_the_instrument(dut):
+    """The ground command set end to end: injections move exactly the
+    right counters in the next frame, clear wipes them, and 'R' answers
+    with the ROM checksum of the committed mask contents."""
+    await start(dut)
+    await ClockCycles(dut.clk, BOOT_CYCLES)
+
+    await _uart_send(dut, ord('1'))     # one A-replica -> RAW_A only
+    await _uart_send(dut, ord('4'))     # all-B -> ESC_B only
+    f = await capture_frame(dut)
+    # let one more frame pass in case the injections landed mid-snapshot
+    if (f[5] << 8 | f[6]) == 0:
+        f = await capture_frame(dut)
+    assert (f[5] << 8 | f[6]) == 1, f"RAW_A: {f[5:7]}"
+    assert (f[7] << 8 | f[8]) == 0, "ESC_A must stay zero"
+    assert (f[11] << 8 | f[12]) == 1, f"ESC_B: {f[11:13]}"
+    assert (f[9] << 8 | f[10]) == 0, "RAW_B must stay zero on an all-B hit"
+
+    await _uart_send(dut, ord('C'))
+    f = await capture_frame(dut)
+    if f[3:13] != [0] * 10:
+        f = await capture_frame(dut)
+    assert f[3:13] == [0] * 10, f"clear failed: {f[3:13]}"
+
+    await _uart_send(dut, ord('R'))
+    for _ in range(60):
+        b = await uart_capture(dut, TLM_INTERVAL + 40_000)
+        if b == ROM_SUM:
+            break
+    else:
+        raise AssertionError(
+            f"ROM checksum byte {ROM_SUM:#04x} never answered")

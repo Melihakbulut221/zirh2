@@ -16,7 +16,19 @@
  * The rolling liveness signature is written to the housekeeping block
  * every loop iteration: telemetry carries it, and the hardware watchdog
  * reboots the SoC if it ever stops arriving.
+ *
+ * PERIODIC VOLUNTARY RESTART: a register flip can leave a ZOMBIE - the
+ * loop and signature alive, but a base pointer hoisted into a
+ * callee-saved register corrupted, so one peripheral path is dead while
+ * the watchdog stays fed (measured in the RF-flip campaign). Every 2^22
+ * iterations (minutes at silicon rate, never reached in simulation) the
+ * firmware jumps back to _start and re-derives ALL register state from
+ * ROM constants, clearing any such state within a bounded window. This
+ * is a warm jump, not a reset: the hardware BOOT counter only counts
+ * real watchdog reboots.
  */
+
+extern void _start(void);
 #include "zirh.h"
 
 static uint32_t sig_step(uint32_t s)
@@ -66,6 +78,9 @@ int main(void)
             tx_byte('Z');
             tx_byte((uint8_t)(sig & 0xFFu));
         }
+
+        if ((count & 0x3FFFFFu) == 0u)
+            ((void (*)(void))_start)();   /* voluntary warm restart */
 
         if (UART_STATUS & UART_RX_AVAIL) {
             uint8_t b = (uint8_t)UART_RXDATA;

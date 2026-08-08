@@ -18,6 +18,8 @@ WARMUP = N + 4
 R_SIG, R_CTRL, R_CPUSIG, R_INJECT = 0x00, 0x04, 0x08, 0x0C
 R_PLAIN, R_RAW_A, R_ESC_A, R_RAW_B, R_ESC_B = 0x10, 0x14, 0x18, 0x1C, 0x20
 R_ECC_C, R_ECC_U = 0x24, 0x28
+R_BUSTO, R_FERR, R_BOOT = 0x2C, 0x30, 0x34
+WD_LIMIT = 1 << 10   # must match Makefile.hk override
 
 INJ_PLAIN, INJ_A_ONE, INJ_A_ALL, INJ_B_ONE, INJ_B_ALL = range(5)
 
@@ -30,6 +32,8 @@ async def start(dut):
     dut.we_i.value = 0
     dut.ecc_corr_i.value = 0
     dut.ecc_uncorr_i.value = 0
+    dut.bus_to_i.value = 0
+    dut.rx_ferr_i.value = 0
     dut.rst_n.value = 0
     await ClockCycles(dut.clk, 3)
     dut.rst_n.value = 1
@@ -195,3 +199,61 @@ async def test_counter_replica_upset_flags_infra(dut):
     assert (sig >> 2) & 1 == 1, "infra_seen must flag the instrument upset"
     assert await counters(dut) == [0, 0, 0, 0, 0], (
         "instrument upset must not poison the measurement")
+
+
+@cocotb.test()
+async def test_bus_timeout_and_ferr_counters(dut):
+    """The two previously invisible event classes count and clear."""
+    await start(dut)
+    for _ in range(2):
+        await RisingEdge(dut.clk)
+        dut.bus_to_i.value = 1
+        await RisingEdge(dut.clk)
+        dut.bus_to_i.value = 0
+    await RisingEdge(dut.clk)
+    dut.rx_ferr_i.value = 1
+    await RisingEdge(dut.clk)
+    dut.rx_ferr_i.value = 0
+
+    await ClockCycles(dut.clk, 2)
+    assert await rd(dut, R_BUSTO) == 2
+    assert await rd(dut, R_FERR) == 1
+    await wr(dut, R_CTRL, 1 << 8)
+    assert await rd(dut, R_BUSTO) == 0 and await rd(dut, R_FERR) == 0
+
+
+@cocotb.test()
+async def test_cpu_watchdog_reboots_and_counts(dut):
+    """No signature writes: the watchdog fires, holds reset 16 cycles and
+    increments BOOT; a signature write postpones it; silence brings it
+    back - repeated recovery, counted."""
+    await start(dut)
+
+    pulses = 0
+    holds = 0
+
+    async def watch():
+        nonlocal pulses, holds
+        prev = 0
+        while True:
+            await RisingEdge(dut.clk)
+            await ReadOnly()
+            v = 1 if dut.wd_rst_o.value == 1 else 0
+            holds += v
+            pulses += v & ~prev
+            prev = v
+
+    w = cocotb.start_soon(watch())
+    await ClockCycles(dut.clk, WD_LIMIT + 64)
+    assert pulses >= 1, "watchdog never fired with a silent CPU"
+    assert await rd(dut, R_BOOT) >= 1, "BOOT must count the reboot"
+    assert holds >= 16, f"reset hold too short: {holds} cycles"
+
+    boot_now = await rd(dut, R_BOOT)
+    await wr(dut, R_CPUSIG, 0x77)          # a living CPU postpones the dog
+    await ClockCycles(dut.clk, WD_LIMIT // 2)
+    assert await rd(dut, R_BOOT) == boot_now, "fed watchdog must not fire"
+
+    await ClockCycles(dut.clk, WD_LIMIT + 64)
+    assert await rd(dut, R_BOOT) > boot_now, "silence must bring it back"
+    w.kill()

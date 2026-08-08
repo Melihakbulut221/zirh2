@@ -284,3 +284,27 @@ IHP macro integration:
 With all three in: gds, precheck, gl_test and viewer green in one run,
 with chain A bound at 700/680/1380 um separation and chain B
 tool-placed on the same die. The A/B experiment is submission-ready.
+
+## v2.1 upgrade record (2026-08-08)
+
+Approved as one package: UART command set + boot-time ROM checksum
+(mask contents - closed the injection loop the pin map left open), the
+CPU watchdog with SoC-only reset and a telemetry BOOT counter,
+bus-timeout and frame-error counters, frame v2.1 ('5A 33', 20 bytes),
+the tlm2 unit suite, a top-level RF fault campaign, and an FPGA
+feasibility measurement (~3540 LUT with BRAM absorption of RF and ECC
+RAM: fits an iCE40UP5K by estimate; functional twin still needs a real
+bitstream because the ECC RAM's combinational read may not survive
+BRAM mapping).
+
+Measured finding worth the whole exercise - the ZOMBIE class: an RF
+flip can corrupt a hoisted base pointer so one peripheral path dies
+while the loop and its rolling signature stay alive, keeping the
+watchdog fed. Signature liveness is NOT command-path liveness. Two
+answers shipped: the firmware performs a voluntary warm restart every
+2^22 iterations (minutes at silicon rate, unreachable in simulation),
+re-deriving all register state from ROM constants; and the fault
+campaign's contract distinguishes SURVIVED / REBOOTED / ZOMBIE with
+one hard assertion - a frozen signature with no reboot never happens.
+Top grows to 3382 FFs; the SoC synthesis check is now explicitly
+firmware-dependent (real ROM constants steer SERV's optimization).

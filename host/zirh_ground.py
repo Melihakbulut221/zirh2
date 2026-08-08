@@ -32,17 +32,18 @@ import sys
 import time
 
 SYNC0 = 0x5A
-SYNC1_V1, SYNC1_V2 = 0x52, 0x32   # 'R': ZIRH-1 10-byte, '2': ZIRH-2 17-byte
-FRAME_LENS = {SYNC1_V1: 10, SYNC1_V2: 17}
+SYNC1_V1, SYNC1_V2, SYNC1_V21 = 0x52, 0x32, 0x33
+FRAME_LENS = {SYNC1_V1: 10, SYNC1_V2: 17, SYNC1_V21: 20}   # 'R','2','3'
 MODES = {0: "zeros", 1: "ones", 2: "checker", 3: "checker"}
 
 
 class Frame:
     __slots__ = ("ver", "seq", "armed", "infra", "mode", "plain", "raw",
-                 "escape", "raw_b", "esc_b", "ecc_c", "ecc_u", "cpu_sig")
+                 "escape", "raw_b", "esc_b", "ecc_c", "ecc_u", "cpu_sig",
+                 "boot", "bus_to", "ferr")
 
     def __init__(self, buf):
-        self.ver = 2 if buf[1] == SYNC1_V2 else 1
+        self.ver = {SYNC1_V1: 1, SYNC1_V2: 2, SYNC1_V21: 21}[buf[1]]
         status = buf[2]
         self.seq = (status >> 4) & 0xF
         self.armed = (status >> 3) & 1
@@ -51,13 +52,16 @@ class Frame:
         self.plain = (buf[3] << 8) | buf[4]
         self.raw = (buf[5] << 8) | buf[6]      # v2: RAW_A
         self.escape = (buf[7] << 8) | buf[8]   # v2: ESC_A
-        if self.ver == 2:
+        self.boot = self.bus_to = self.ferr = None
+        if self.ver >= 2:
             self.raw_b = (buf[9] << 8) | buf[10]
             self.esc_b = (buf[11] << 8) | buf[12]
             self.ecc_c, self.ecc_u, self.cpu_sig = buf[13], buf[14], buf[15]
         else:
             self.raw_b = self.esc_b = None
             self.ecc_c = self.ecc_u = self.cpu_sig = None
+        if self.ver == 21:
+            self.boot, self.bus_to, self.ferr = buf[16], buf[17], buf[18]
 
 
 def checksum_ok(buf):
@@ -147,9 +151,14 @@ class Session:
                 "I" if f.infra else "-",
             ])
             extra = ""
-            if f.ver == 2:
+            if f.ver >= 2:
                 extra = (f"  RAW_B={f.raw_b:5d} ESC_B={f.esc_b:5d} "
                          f"ECC={f.ecc_c}/{f.ecc_u} SIG={f.cpu_sig:02x}")
+            if f.ver == 21:
+                extra += f" BOOT={f.boot} BUSTO={f.bus_to} FERR={f.ferr}"
+                if self.prev is not None and self.prev.boot is not None \
+                        and f.boot > self.prev.boot:
+                    extra += "  ! CPU REBOOTED (watchdog)"
             lines.append(
                 f"v{f.ver} seq={f.seq:2d} [{flags}] mode={MODES[f.mode]:7s} "
                 f"PLAIN={f.plain:5d} ({d[0]:>6s})  "
@@ -194,6 +203,64 @@ def make_frame2(seq, cpu_sig, esc_a=0, esc_b=0, corrupt=False):
     return bytes(buf)
 
 
+def make_frame21(seq, cpu_sig, boot=0, esc_a=0, esc_b=0, corrupt=False):
+    status = ((seq & 0xF) << 4) | (1 << 3)
+    buf = bytearray([SYNC0, SYNC1_V21, status, 0, 0, 0, 0,
+                     esc_a >> 8, esc_a & 0xFF, 0, 0,
+                     esc_b >> 8, esc_b & 0xFF, 0, 0, cpu_sig, boot, 0, 0])
+    chk = 0
+    for b in buf:
+        chk ^= b
+    buf.append(chk ^ (0x01 if corrupt else 0x00))
+    return bytes(buf)
+
+
+CAMPAIGN = [
+    # (command byte, field checked, expected delta)
+    (b"1", "raw", 1), (b"2", "escape", 1), (b"3", "raw_b", 1),
+    (b"4", "esc_b", 1), (b"0", "plain", 1),
+]
+
+
+def campaign(sp, sess, dec, pump):
+    """Bench fault-injection campaign: fire every injection path over the
+    UART command set and verify exactly the right counter moves by one in
+    the following frames. Requires --port."""
+    import time as _t
+
+    def next_frame(timeout=10.0):
+        end = _t.time() + timeout
+        got = []
+        def sink(ev, pl):
+            if ev == "frame":
+                got.append(pl)
+        while _t.time() < end and not got:
+            data = sp.read(256)
+            for ev, pl in dec.feed(data):
+                sess.handle(ev, pl)
+                sink(ev, pl)
+        if not got:
+            raise RuntimeError("no frame within timeout")
+        return got[-1]
+
+    sp.write(b"C")
+    base = next_frame()
+    print(f"campaign baseline: seq={base.seq}")
+    failures = 0
+    for cmd, field, delta in CAMPAIGN:
+        before = getattr(next_frame(), field)
+        sp.write(cmd)
+        _t.sleep(0.05)
+        after = getattr(next_frame(), field)
+        ok = (after - before) == delta
+        print(f"  cmd {cmd.decode()}: {field} {before}->{after} "
+              f"{'ok' if ok else 'FAIL'}")
+        failures += not ok
+    sp.write(b"R")
+    print(f"campaign: {len(CAMPAIGN) - failures}/{len(CAMPAIGN)} paths ok")
+    return failures == 0
+
+
 def selftest():
     """Decoder must survive a hostile stream: echo bytes (including fake sync
     bytes), a corrupted frame, dropped frames, split feeds."""
@@ -209,6 +276,8 @@ def selftest():
         + make_frame2(7, 0xBE, esc_a=0, esc_b=2)   # a v2 frame in the same stream
         + make_frame2(8, 0xE1, corrupt=True)       # corrupted v2
         + make_frame2(9, 0x11)
+        + make_frame21(10, 0x22, boot=1)           # v2.1 with a reboot count
+        + make_frame21(11, 0x33, boot=2)           # BOOT climbed: reboot flagged
     )
 
     sess = Session()
@@ -219,9 +288,9 @@ def selftest():
             for line in sess.handle(ev, pl):
                 print(line)
 
-    assert sess.frames == 5, f"expected 5 valid frames, got {sess.frames}"
+    assert sess.frames == 7, f"expected 7 valid frames, got {sess.frames}"
     assert sess.chk_fails >= 2, "both corrupted frames must be flagged"
-    assert sess.prev.ver == 2 and sess.prev.cpu_sig == 0x11
+    assert sess.prev.ver == 21 and sess.prev.boot == 2
     assert sess.gaps > 0, "seq discontinuity must be counted"
     print("selftest:", sess.summary())
     print("selftest PASS")
@@ -237,6 +306,9 @@ def main():
     ap.add_argument("--csv", help="append machine-readable log to this file")
     ap.add_argument("--show-echo", action="store_true",
                     help="print non-frame bytes as well")
+    ap.add_argument("--campaign", action="store_true",
+                    help="run the injection campaign over the command set "
+                         "(requires --port)")
     args = ap.parse_args()
 
     if args.selftest:
@@ -259,6 +331,9 @@ def main():
         else:
             import serial  # pyserial, only needed for live mode
             with serial.Serial(args.port, args.baud, timeout=0.2) as sp:
+                if args.campaign:
+                    ok = campaign(sp, sess, dec, pump)
+                    raise SystemExit(0 if ok else 1)
                 print(f"listening on {args.port} @ {args.baud} 8N1 "
                       "(ctrl-C to stop)")
                 while True:
