@@ -189,12 +189,12 @@ run_check "zirh_ecc_ram  (SECDED, no TMR by design)" \
 #   12 replica instances = uart_regs 9 + bus watchdog 3.
 #   FFs: SERV core+RF 1253 (RF 32x32 = 1024, PLAIN - the honest v1 story:
 #   the CPU is itself a beam target) + eram 1250 + uregs 224 + bus 19
-#   + glue 35 (incl. the cpu_awake X-gate), eram at 64 B = 2158.
+#   + glue 35 (incl. the cpu_awake X-gate), eram at 64 B = 2160.
 #   NOTE: this number is FIRMWARE-DEPENDENT - the ROM contents are real
 #   constants and SERV optimizes against them, so a firmware change can
 #   legitimately move it by a few flops. Update it together with rom_init.vh.
 run_check "zirh_soc      (SERV + P0 cluster)" \
-    zirh_soc 12 2158 zirh_tmr_ff \
+    zirh_soc 12 2160 zirh_tmr_ff \
     serv/serv_aligner.v serv/serv_alu.v serv/serv_bufreg2.v \
     serv/serv_bufreg.v serv/serv_compdec.v serv/serv_csr.v \
     serv/serv_ctrl.v serv/serv_decode.v serv/serv_immdec.v \
@@ -253,11 +253,11 @@ run_check "zirh_ifc      (CAN + SpW + bus regs)" \
     zirh_tmr_lib.v zirh_can.v zirh_spw.v zirh_ifc.v
 
 # --- check 16: the ZIRH-2 top -----------------------------------------------
-# FFs: soc 2156 + hk 933 + tlm2 213 + env 125 + ifc 376 + clk_rst 79
-# + glue = 3885. Replicas: v2.2's 46 + the ifc's one NEW definition
+# FFs: soc 2160 + hk 933 + tlm2 213 + env 125 + ifc 376 + clk_rst 79
+# + glue = 3887. Replicas: v2.2's 46 + the ifc's one NEW definition
 # (WIDTH=3 FSM states) x 3 = 49; widths 1 and 8 reuse existing defs.
 run_check "tt_um_hma_zirh2 (ZIRH-2 top)" \
-    tt_um_hma_zirh2 49 3885 zirh_tmr_ff \
+    tt_um_hma_zirh2 49 3887 zirh_tmr_ff \
     serv/serv_aligner.v serv/serv_alu.v serv/serv_bufreg2.v \
     serv/serv_bufreg.v serv/serv_compdec.v serv/serv_csr.v \
     serv/serv_ctrl.v serv/serv_decode.v serv/serv_immdec.v \

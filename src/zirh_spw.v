@@ -233,7 +233,9 @@ module zirh_spw #(
             dout_o       <= 1'b0;
             sout_o       <= 1'b0;
         end else begin
-            if (tx_char_v_i & (state_q == S_RUN)) begin
+            // queue in ANY state: a char written together with link
+            // enable (the firmware's 'w') waits for Run and goes then
+            if (tx_char_v_i) begin
                 tx_pending_d <= 1'b1;
                 tx_char_q    <= tx_char_i;
             end

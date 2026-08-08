@@ -108,7 +108,7 @@ module zirh_can #(
                                     & ~t_body_crc_phase)
                                    ? T_TAIL : T_STUFFED;
             T_TAIL:    t_state_d = (bit_tick & (t_left == 6'd1)) ? T_ACK : T_TAIL;
-            T_ACK:     t_state_d = bit_tick ? T_EOF : T_ACK;
+            T_ACK:     t_state_d = (bit_tick & (t_left == 6'd1)) ? T_EOF : T_ACK;
             T_EOF:     t_state_d = (bit_tick & (t_left == 6'd1)) ? T_IDLE : T_EOF;
             default:   t_state_d = T_IDLE;      // safe-state trap
         endcase
@@ -182,14 +182,18 @@ module zirh_can #(
                     t_left <= t_left - 6'd1;
                 end
                 T_ACK: begin
-                    if (divq == {DW{1'b0}}) t_out <= 1'b1;   // release the slot
-                    // sample LATE in the slot: the receiver's pull crosses a
-                    // two-flop sync plus the bus, and mid-bit misses it by a
-                    // cycle on a tight loopback (measured)
-                    if (divq == CAN_DIV - 2) t_ack_seen <= ~rx;
+                    // TWO bits: the FSM leads its own wire by one slot
+                    // (state moves when a bit is LOADED, the bit appears a
+                    // slot later - measured the hard way), so the first
+                    // T_ACK bit is the delimiter on the wire and the SECOND
+                    // is the actual slot. Sample late in it: the receiver's
+                    // pull crosses a two-flop sync plus the bus.
                     if (bit_tick) begin
-                        t_left <= 6'd11;   // ACKdel + EOF(7) + IFS(3)
+                        t_out  <= 1'b1;
+                        t_left <= t_left - 6'd1;
                     end
+                    if ((divq == CAN_DIV - 2) && (t_left == 6'd1))
+                        t_ack_seen <= ~rx;
                 end
                 T_EOF: if (bit_tick) begin
                     t_out  <= 1'b1;
@@ -202,8 +206,10 @@ module zirh_can #(
                 end
                 default: t_out <= 1'b1;
             endcase
-            // entering T_TAIL: one CRC-delimiter bit
+            // phase lengths, loaded on the transition edges
             if (t_state == T_STUFFED && t_state_d == T_TAIL) t_left <= 6'd1;
+            if (t_state == T_TAIL    && t_state_d == T_ACK)  t_left <= 6'd2;
+            if (t_state == T_ACK     && t_state_d == T_EOF)  t_left <= 6'd10;
         end
     end
 
