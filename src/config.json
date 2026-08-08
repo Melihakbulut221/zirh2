@@ -4,6 +4,8 @@
   "PL_TARGET_DENSITY_PCT": 75,
   "//clk": "25 MHz constraint: the chip runs at 20 MHz nominal and the old 50 MHz target made the post-CTS resizer inflate 1903 repair buffers into a full die (measured, DPL-0036)",
   "CLOCK_PERIOD": 40,
+  "//postcts": "the post-CTS resizer repairs hold against PRE-ROUTE parasitic guesses and inflated ~1900 buffers into a 77%-full die - four DPL-0036s at that exact step, immune to density targets and macro placement (60/73/78/75, mid/bottom macros, all measured). Skipped: the post-GRT resizer does the same job against real routed parasitics and inserts what is actually needed; hold correctness is still gated by signoff STA",
+  "RUN_POST_CTS_RESIZER_TIMING": false,
   "PL_RESIZER_HOLD_SLACK_MARGIN": 0.1,
   "GRT_RESIZER_HOLD_SLACK_MARGIN": 0.05,
   "RUN_LINTER": 1,
