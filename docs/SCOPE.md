@@ -400,3 +400,24 @@ the open risk of this pull-in: the two cores plus the ifc register
 block add roughly 500 flops to a die that closed at 78.5% - the gds
 run after this lands is the arbiter, and the recorded fallback is
 shrinking the monitor rings to N=48 before cutting either interface.
+
+## The N=32 shrink (2026-08-09)
+
+Eight gds attempts measured the wall from every side: with the
+interfaces aboard (3887 flops) the die placed and routed at 81% with
+23 ns of setup slack, but every hold-repair pass - pre-route (~1900
+cells), post-route (444 with distributed padding) - died in detailed
+placement, indifferent to density targets, macro position, and repair
+staging. The flow-level knobs that DID move the needle are kept
+(pre-route repair off, post-GRT repair on at 0.1 margin, one site of
+global-placement padding); the remaining gap was real area.
+
+Directed decision: the monitor rings shrink from N=64 to N=32 rather
+than dropping an interface. The A/B placement experiment survives
+intact - same three-macro constrained chain against the tool-placed
+control, same injection semantics - at half the per-pass SEU capture
+statistics, which beam time repays linearly. The zirh_tmr_ff32 macro
+hardens under the same Metal5/PDN discipline (83.8 x 102.5 um, 8.6k
+um2 - 43% smaller than the ff64); three of them return ~20k um2 of
+core and the ring flops another ~7k. Housekeeping drops to 706 FFs,
+the top to 3660.

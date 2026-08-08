@@ -1,7 +1,7 @@
 {
   "//": "Only export pin area in LEF (without any connected nets)",
-  "//td": "measured to three DPL-0036s: 60 and 73 sat below the 76.8% reality, and 78 made legalization WORSE (40 -> 230 unplaced) - the wall was never the average density but the three chain-A macros parked mid-height, splitting every row they span into placement islands; they now sit flush with the bottom edge so the rows above stay contiguous, and with one site of cell padding the padded area computes to ~86% of the core, so the target rides just above THAT - the physical cells still only occupy 77%, the difference IS the distributed slack",
-  "PL_TARGET_DENSITY_PCT": 88,
+  "//td": "measured to three DPL-0036s: 60 and 73 sat below the 76.8% reality, and 78 made legalization WORSE (40 -> 230 unplaced) - the wall was never the average density but the three chain-A macros parked mid-height, splitting every row they span into placement islands; they now sit flush with the bottom edge so the rows above stay contiguous, and with one site of cell padding with the N=32 shrink the padded area computes to ~82% of the core, so the target rides just above THAT - the physical cells still only occupy 77%, the difference IS the distributed slack",
+  "PL_TARGET_DENSITY_PCT": 84,
   "//clk": "25 MHz constraint: the chip runs at 20 MHz nominal and the old 50 MHz target made the post-CTS resizer inflate 1903 repair buffers into a full die (measured, DPL-0036)",
   "CLOCK_PERIOD": 40,
   "//postcts": "the post-CTS resizer repairs hold against PRE-ROUTE parasitic guesses and inflated ~1900 buffers into a 77%-full die - four DPL-0036s at that exact step, immune to density targets and macro placement (60/73/78/75, mid/bottom macros, all measured). Skipped: the post-GRT resizer does the same job against real routed parasitics and inserts what is actually needed; hold correctness is still gated by signoff STA",

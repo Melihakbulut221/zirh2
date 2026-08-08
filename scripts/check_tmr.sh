@@ -205,13 +205,11 @@ run_check "zirh_soc      (SERV + P0 cluster)" \
 EXTRA_CMDS=""
 
 # --- check 10: the ZIRH-2 housekeeping block --------------------------------
-# zirh_hk at N=64 with the v2.1 additions (bus-timeout, frame-error and
-# BOOT counters + the CPU watchdog): 25 replica-bearing paramods x
-# instances. FFs: rings 448 + counters 363 + watchdog 67 + infra/misc
-# + the two env strobe one-shots = 933.
+# zirh_hk at N=32 (the interfaces-fit shrink, 2026-08-09): rings drop
+# to 224, counters/watchdog/misc unchanged - 706 total (WW shrinks a bit too).
 run_check "zirh_hk       (A/B chains + counters)" \
-    zirh_hk 25 933 zirh_tmr_ff \
-    zirh_tmr_lib.v zirh_tmr_ff64.v zirh_hk.v
+    zirh_hk 25 706 zirh_tmr_ff \
+    zirh_tmr_lib.v zirh_tmr_ff32.v zirh_hk.v
 
 # --- check 11: the telemetry framer v2 --------------------------------------
 # zirh_tlm2 at INTERVAL_LOG2=16: interval 16 + state 6 = 2 paramods x 3 = 6
@@ -253,17 +251,17 @@ run_check "zirh_ifc      (CAN + SpW + bus regs)" \
     zirh_tmr_lib.v zirh_can.v zirh_spw.v zirh_ifc.v
 
 # --- check 16: the ZIRH-2 top -----------------------------------------------
-# FFs: soc 2160 + hk 933 + tlm2 213 + env 125 + ifc 376 + clk_rst 79
-# + glue = 3887. Replicas: v2.2's 46 + the ifc's one NEW definition
+# FFs: soc 2160 + hk 706 + tlm2 213 + env 125 + ifc 376 + clk_rst 79
+# + glue = 3660. Replicas: v2.2's 46 + the ifc's one NEW definition
 # (WIDTH=3 FSM states) x 3 = 49; widths 1 and 8 reuse existing defs.
 run_check "tt_um_hma_zirh2 (ZIRH-2 top)" \
-    tt_um_hma_zirh2 49 3887 zirh_tmr_ff \
+    tt_um_hma_zirh2 49 3660 zirh_tmr_ff \
     serv/serv_aligner.v serv/serv_alu.v serv/serv_bufreg2.v \
     serv/serv_bufreg.v serv/serv_compdec.v serv/serv_csr.v \
     serv/serv_ctrl.v serv/serv_decode.v serv/serv_immdec.v \
     serv/serv_mem_if.v serv/serv_rf_if.v serv/serv_rf_ram_if.v \
     serv/serv_rf_ram.v serv/serv_rf_top.v serv/serv_state.v \
-    serv/serv_top.v zirh_tmr_lib.v zirh_tmr_ff64.v zirh_clk_rst.v \
+    serv/serv_top.v zirh_tmr_lib.v zirh_tmr_ff32.v zirh_clk_rst.v \
     zirh_rom.v zirh_bus.v zirh_ecc_ram.v zirh_rs422.v zirh_uart_regs.v \
     zirh_soc.v zirh_hk.v zirh_tlm2.v zirh_env.v zirh_can.v zirh_spw.v \
     zirh_ifc.v tt_um_hma_zirh2.v
