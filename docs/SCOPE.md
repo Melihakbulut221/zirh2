@@ -421,3 +421,25 @@ hardens under the same Metal5/PDN discipline (83.8 x 102.5 um, 8.6k
 um2 - 43% smaller than the ff64); three of them return ~20k um2 of
 core and the ring flops another ~7k. Housekeeping drops to 706 FFs,
 the top to 3660.
+
+## The placement campaign closes (2026-08-09, run 13)
+
+Thirteen gds runs, each one paying for a fact. The winning
+configuration, every line of it measured against a failure:
+CLOCK_PERIOD 40 (the honest 25 MHz target), pre-route hold repair OFF
+(it repaired against parasitic guesses and drowned in its own
+insertions), post-GRT repair ON (this flow ships it disabled - two
+byte-identical results proved no repair ran at all until it was
+switched), hold margin 0.06 (0.1 asked for 60% more than the debt,
+0.25 tripled the insertion volume), no cell padding (the knob is a
+total split - 1 rounds to nothing, 2 forced 98% density), density
+target 79 (one point above the die's real 77%; every point higher is
+air the placer never distributes), and PL_MAX_DISPLACEMENT_Y 250 (the
+last ten homeless buffers needed to hop the 102 um macro band and the
+default 100 um radius could not carry them).
+
+Final numbers with UART + mirror + CAN + SpaceWire + TID/SET/burst
+all aboard at N=32: utilization 83.3%, setup +24.4 ns, hold clean at
+every corner (+27 ps fast, +164 ps typical, +403 ps slow, zero
+violating endpoints), DRC/LVS/antenna zero, 3594 netlist flops plus
+three 32-flop macros = 3690 exactly as the synthesis gates count.
