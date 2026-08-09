@@ -28,6 +28,7 @@
 # =============================================================================
 
 import argparse
+import json
 import sys
 import time
 
@@ -109,12 +110,16 @@ class Decoder:
 class Session:
     """Tracks continuity across frames and renders report lines."""
 
+    BEAM_FIELDS = ("plain", "raw", "escape", "raw_b", "esc_b",
+                   "ecc_c", "ecc_u", "boot", "bus_to", "ferr")
+
     def __init__(self, csv=None):
         self.prev = None
         self.frames = 0
         self.gaps = 0
         self.chk_fails = 0
         self.skipped = 0
+        self.totals = {f: 0 for f in self.BEAM_FIELDS}
         self.csv = csv
         if csv:
             csv.write("time,seq,armed,infra,mode,plain,raw,escape,"
@@ -123,6 +128,35 @@ class Session:
     def _delta(self, now, before):
         d = now - before
         return d if d >= 0 else None  # negative without CLEAR: suspicious
+
+    def _accumulate(self, fr):
+        """Positive counter deltas summed per channel; a clear (counter
+        going backward) contributes nothing. This is the yield ledger the
+        cross-section math consumes."""
+        if self.prev is None or self.prev.ver != fr.ver:
+            return
+        for f in self.BEAM_FIELDS:
+            now, before = getattr(fr, f), getattr(self.prev, f)
+            if now is None or before is None:
+                continue
+            d = now - before
+            if d > 0:
+                self.totals[f] += d
+
+    def report_dict(self, fluence_cm2=0.0, meta=None):
+        """Per-channel totals and, when a real fluence is given, the
+        per-channel cross-sections - the number a beam shift exists to
+        produce. JESD57A-shaped metadata rides along."""
+        rep = {"frames": self.frames, "gaps": self.gaps,
+               "chk_fails": self.chk_fails, "junk_bytes": self.skipped,
+               "event_totals": dict(self.totals)}
+        if meta:
+            rep.update(meta)
+        if fluence_cm2 > 0:
+            rep["fluence_cm2"] = fluence_cm2
+            rep["cross_section_cm2"] = {
+                f: n / fluence_cm2 for f, n in self.totals.items() if n}
+        return rep
 
     def handle(self, event, payload, quiet_skips=True):
         lines = []
@@ -170,6 +204,7 @@ class Session:
                     f"{time.time():.3f},{f.seq},{f.armed},{f.infra},"
                     f"{MODES[f.mode]},{f.plain},{f.raw},{f.escape},"
                     f"{d[0]},{d[1]},{d[2]},{gap}\n")
+            self._accumulate(f)
             self.prev = f
         return lines
 
@@ -315,6 +350,34 @@ def campaign(sp, sess, dec, pump):
     return failures == 0
 
 
+def crosscheck(primary, mirror):
+    """The dual-voice verdict. The mirror carries ONLY frames by
+    construction, so junk there means a decoder or wiring problem; a
+    primary drowning in junk while the mirror stays whole is the
+    measured UART-flood signature - the exact failure the mirror pin
+    exists to survive."""
+    return {
+        "primary_frames": primary.frames,
+        "mirror_frames": mirror.frames,
+        "primary_junk": primary.skipped,
+        "mirror_junk": mirror.skipped,
+        "mirror_clean": mirror.skipped == 0 and mirror.chk_fails == 0,
+        "flood_suspected": (primary.skipped > 10 * max(1, primary.frames)
+                            and mirror.frames > primary.frames),
+    }
+
+
+def crosscheck_line(primary, mirror):
+    c = crosscheck(primary, mirror)
+    verdict = ("FLOOD SUSPECTED - primary drowned, mirror carried the run"
+               if c["flood_suspected"] else
+               "dual voice consistent" if c["mirror_clean"] else
+               "MIRROR DEGRADED - check wiring/baud")
+    return (f"dual-voice: primary {c['primary_frames']} frames / "
+            f"{c['primary_junk']} junk, mirror {c['mirror_frames']} frames / "
+            f"{c['mirror_junk']} junk -> {verdict}")
+
+
 def selftest():
     """Decoder must survive a hostile stream: echo bytes (including fake sync
     bytes), a corrupted frame, dropped frames, split feeds."""
@@ -347,6 +410,42 @@ def selftest():
     assert sess.prev.ver == 21 and sess.prev.boot == 2
     assert sess.gaps > 0, "seq discontinuity must be counted"
     print("selftest:", sess.summary())
+
+    # the yield ledger and the beam math: three consecutive v2.1 frames
+    # with known counter climbs, a clear in the middle that must NOT
+    # count backward, and a fluence that turns totals into cross-sections
+    s2 = Session()
+    d2 = Decoder()
+    beam = (make_frame21(1, 0x10, esc_a=0, esc_b=0)
+            + make_frame21(2, 0x20, esc_a=3, esc_b=1)     # +3 ESC_A, +1 ESC_B
+            + make_frame21(3, 0x30, esc_a=5, esc_b=1)     # +2 ESC_A
+            + make_frame21(4, 0x40, esc_a=0, esc_b=0)     # CLEAR: no negatives
+            + make_frame21(5, 0x50, esc_a=1, esc_b=0))    # +1 ESC_A
+    for ev, pl in d2.feed(beam):
+        s2.handle(ev, pl)
+    assert s2.totals["escape"] == 6, s2.totals
+    assert s2.totals["esc_b"] == 1, s2.totals
+    rep = s2.report_dict(fluence_cm2=1.0e6, meta={"ion": "selftest"})
+    assert abs(rep["cross_section_cm2"]["escape"] - 6e-6) < 1e-12
+    print(f"beam math: totals {s2.totals['escape']}/{s2.totals['esc_b']}, "
+          f"sigma(ESC_A) {rep['cross_section_cm2']['escape']:.1e} cm2")
+
+    # the dual-voice cross-check: primary drowned in garbage, mirror pure
+    prim, mir = Session(), Session()
+    dp, dm = Decoder(), Decoder()
+    frames = [make_frame21(i, 0x60 + i) for i in range(1, 6)]
+    import os as _os
+    junk = bytes(b for b in _os.urandom(600) if b != 0x5A)
+    flooded = junk[:300] + frames[0] + junk[300:] + frames[1]
+    pure = b"".join(frames)
+    for ev, pl in dp.feed(flooded):
+        prim.handle(ev, pl)
+    for ev, pl in dm.feed(pure):
+        mir.handle(ev, pl)
+    c = crosscheck(prim, mir)
+    assert c["mirror_clean"], c
+    assert c["flood_suspected"], c
+    print(crosscheck_line(prim, mir))
     print("selftest PASS")
 
 
@@ -363,6 +462,22 @@ def main():
     ap.add_argument("--campaign", action="store_true",
                     help="run the injection campaign over the command set "
                          "(requires --port)")
+    ap.add_argument("--mirror-port",
+                    help="second serial input: the TLM_MIRROR pin; frames "
+                         "from both voices are decoded and cross-checked")
+    ap.add_argument("--mirror-file",
+                    help="offline capture of the mirror stream")
+    ap.add_argument("--fluence", type=float, default=0.0,
+                    help="run fluence in particles/cm2: turns event totals "
+                         "into per-channel cross-sections")
+    ap.add_argument("--flux", type=float, default=0.0)
+    ap.add_argument("--facility", default="")
+    ap.add_argument("--ion", default="")
+    ap.add_argument("--let", type=float, default=0.0,
+                    help="LET in MeV cm2/mg (bookkeeping)")
+    ap.add_argument("--report",
+                    help="write the run report (totals, cross-sections, "
+                         "dual-voice cross-check) as JSON here")
     args = ap.parse_args()
 
     if args.selftest:
@@ -372,30 +487,59 @@ def main():
     csv = open(args.csv, "a") if args.csv else None
     sess = Session(csv=csv)
     dec = Decoder()
+    msess = Session() if (args.mirror_port or args.mirror_file) else None
+    mdec = Decoder() if msess else None
 
     def pump(chunk):
         for ev, pl in dec.feed(chunk):
             for line in sess.handle(ev, pl, quiet_skips=not args.show_echo):
                 print(line, flush=True)
 
+    def pump_mirror(chunk):
+        for ev, pl in mdec.feed(chunk):
+            for line in msess.handle(ev, pl, quiet_skips=True):
+                print("MIRROR " + line, flush=True)
+
     try:
         if args.file:
             with open(args.file, "rb") as f:
                 pump(f.read())
+            if args.mirror_file:
+                with open(args.mirror_file, "rb") as f:
+                    pump_mirror(f.read())
         else:
             import serial  # pyserial, only needed for live mode
             with serial.Serial(args.port, args.baud, timeout=0.2) as sp:
                 if args.campaign:
                     ok = campaign(sp, sess, dec, pump)
                     raise SystemExit(0 if ok else 1)
+                msp = None
+                if args.mirror_port:
+                    msp = serial.Serial(args.mirror_port, args.baud,
+                                        timeout=0.05)
                 print(f"listening on {args.port} @ {args.baud} 8N1 "
                       "(ctrl-C to stop)")
                 while True:
                     pump(sp.read(256))
+                    if msp:
+                        pump_mirror(msp.read(256))
     except KeyboardInterrupt:
         pass
     finally:
         print(sess.summary())
+        if msess:
+            print("mirror:", msess.summary())
+            print(crosscheck_line(sess, msess))
+        if args.report:
+            meta = {"facility": args.facility, "ion": args.ion,
+                    "let_mev_cm2_mg": args.let, "flux_cm2_s": args.flux}
+            rep = sess.report_dict(args.fluence, meta)
+            if msess:
+                rep["mirror"] = msess.report_dict()
+                rep["dual_voice"] = crosscheck(sess, msess)
+            with open(args.report, "w") as f:
+                json.dump(rep, f, indent=2)
+            print(f"report written: {args.report}")
         if csv:
             csv.close()
 
