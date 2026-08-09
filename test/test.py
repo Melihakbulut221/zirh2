@@ -18,7 +18,7 @@ CLK_NS = 40
 DIV = 174
 FRAME_LEN = 20
 TLM_INTERVAL = 1 << 16
-ROM_SUM = 0xBC   # XOR-fold of the committed rom_init.vh, computed offline
+ROM_SUM = 0xF4   # XOR-fold of the committed rom_init.vh, computed offline
 BOOT_CYCLES = 120_000   # crt0 + the 256-word ROM checksum loop, bit-serial
 
 UART_TX_BIT = 4

@@ -18,7 +18,7 @@ until a shuttle decision opens a die budget.
 
 | # | Item | Why (commercial x engineering) | Effort | Status |
 |---|------|-------------------------------|--------|--------|
-| 1 | crt0 register-file scrub | Closes the measured RF-residue reboot hole; must land before the GL campaign baselines firmware-dependent counts | S | IN CYCLE 1 |
+| 1 | crt0 register-file scrub | Closes the measured RF-residue reboot hole; must land before the GL campaign baselines firmware-dependent counts | S | DONE (cycle 1) |
 | 2 | TMR-Guard: manifest-driven check_tmr CLI | Sharpest commercial pain (synthesis silently deletes TMR; no independent verifier exists on the market), smallest effort - the methodology and the negative test are already written | S | OPEN |
 | 3 | GL fault campaign on the routed netlist | The survived/rebooted/zombie contract has never run on the netlist that will fly; highest chance of a real find before submission | M | OPEN |
 | 4 | Campaign orchestration library | One classifier and injection DSL for RTL, GL, twin and beam backends; this IS the qual-pipeline product seed, and the zombie taxonomy is its unfair advantage | M | OPEN |
@@ -59,5 +59,7 @@ until a shuttle decision opens a die budget.
 
 ## Cycle log
 
-- CYCLE 1 (2026-08-09): crt0 RF scrub - firmware change, full
-  re-baseline chain (rom_init, checksum, firmware-dependent counts, GL).
+- CYCLE 1 (2026-08-09): crt0 RF scrub LANDED - 31 boot-time writes,
+  checksum 0xF4 (227/256 ROM words used), firmware-dependent counts
+  unmoved (soc 2160 / top 3690), soc 3/3, integration 6/6, z2 3/3
+  against the scrubbed mask. Next: cycle 2 = TMR-Guard manifest CLI.
