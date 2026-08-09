@@ -20,7 +20,7 @@ until a shuttle decision opens a die budget.
 |---|------|-------------------------------|--------|--------|
 | 1 | crt0 register-file scrub | Closes the measured RF-residue reboot hole; must land before the GL campaign baselines firmware-dependent counts | S | DONE (cycle 1) |
 | 2 | TMR-Guard: manifest-driven check_tmr CLI | Sharpest commercial pain (synthesis silently deletes TMR; no independent verifier exists on the market), smallest effort - the methodology and the negative test are already written | S | DONE (cycle 2) |
-| 3 | GL fault campaign on the routed netlist | The survived/rebooted/zombie contract has never run on the netlist that will fly; highest chance of a real find before submission | M | OPEN |
+| 3 | GL fault campaign on the routed netlist | The survived/rebooted/zombie contract has never run on the netlist that will fly; highest chance of a real find before submission | M | DONE (cycle 3) |
 | 4 | Campaign orchestration library | One classifier and injection DSL for RTL, GL, twin and beam backends; this IS the qual-pipeline product seed, and the zombie taxonomy is its unfair advantage | M | OPEN |
 | 5 | Ground console: fluence + cross-section + dual-port decode | At ~USD 3k/hour beam rates, live yield accounting pays for itself in one shift; the mirror stream cross-check is built but software never exploits it | M | OPEN |
 | 6 | STA corner/skew/seed sweep | Closes SCOPE's cross-macro skew open item; proves the +27 ps fast-corner hold is the recipe, not luck | S-M | OPEN |
@@ -70,4 +70,16 @@ until a shuttle decision opens a die budget.
   FAIL there. Self-test on this design: 7/7 positive, 7/7 negative.
   Both field-measured counting gotchas (per-definition selection,
   post-techmap DFF summing) are handled in the tool, not in comments.
-  Next: cycle 3 = GL fault campaign on the routed netlist.
+- CYCLE 3 (2026-08-09): GL fault campaign LANDED - test_gl_campaign.py
+  runs inside the existing gl_test CI job (GATES=yes appends the
+  module; RTL runs skip it). Targets come from the netlist itself:
+  3594 DFFs = 1174 keep_hierarchy-island flops with readable prefixes
+  + 2420 anonymous core flops whose hierarchy dissolved at synthesis;
+  injection is Force/Release on Q nets resolved through one VPI pass
+  (dotted island names break path lookup - measured). Local replica
+  run on the shipped netlist: six as-placed single-replica flips, six
+  ERR_TMR pulses, CPU alive after. Enabling local GL took three
+  measured fixes now in the repo: unpowered nl (not pnl), the ciel
+  PINNED cell models, and TinyTapeout's patched iverilog v13 (vanilla
+  icarus leaves the models' $setuphold delayed nets undriven and the
+  whole die reads X - proven on a single cell).

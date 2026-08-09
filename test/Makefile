@@ -54,10 +54,17 @@ else
 
 # Gate level simulation:
 SIM_BUILD				= sim_build/gl
+# the pinned cell models drive their internal delayed_* nets from specify
+# blocks; icarus ignores specify by default and the flops never clock
+# (measured: the whole die reads X forever) - -gspecify turns them on
+COMPILE_ARGS    += -gspecify
 COMPILE_ARGS    += -DGL_TEST
 COMPILE_ARGS    += -DFUNCTIONAL
 COMPILE_ARGS    += -DSIM
 VERILOG_SOURCES += $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_io/verilog/sg13g2_io.v
+# newer PDK builds split the UDP primitives out of the cell models; the
+# pinned build is self-contained - include the file only when it exists
+VERILOG_SOURCES += $(wildcard $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_stdcell/verilog/sg13g2_udp.v)
 VERILOG_SOURCES += $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_stdcell/verilog/sg13g2_stdcell.v
 
 # this gets copied in by the GDS action workflow
@@ -75,8 +82,14 @@ COMPILE_ARGS 		+= -I$(SRC_DIR)
 VERILOG_SOURCES += $(PWD)/tb.v
 TOPLEVEL = tb
 
-# List test modules to run, separated by commas and without the .py suffix:
+# List test modules to run, separated by commas and without the .py suffix.
+# Gate-level runs add the netlist fault campaign - the contract on the
+# netlist that flies; in RTL runs the module self-skips.
+ifeq ($(GATES),yes)
+COCOTB_TEST_MODULES = test,test_gl_campaign
+else
 COCOTB_TEST_MODULES = test
+endif
 
 # include cocotb's make rules to take care of the simulator setup
 # rom_init.vh is an include, invisible to VERILOG_SOURCES: without this extra
