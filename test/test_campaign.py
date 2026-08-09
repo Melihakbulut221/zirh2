@@ -19,6 +19,7 @@
 # never shot mid-boot, but short enough to keep trials simulable.
 # =============================================================================
 
+import os
 import random
 
 import cocotb
@@ -97,12 +98,13 @@ async def test_rf_flip_campaign(dut):
     # lowercase p..w is safe
     assert await alive(dut, 0x70), "sanity: CPU must answer before the campaign"
 
-    random.seed(64)
+    random.seed(int(os.getenv("ZIRH_SEED", "64")))
+    trials = int(os.getenv("ZIRH_TRIALS", "6"))
     survived = 0
     rebooted = 0
     zombies = 0
 
-    for trial in range(6):
+    for trial in range(trials):
         # independent trials: full external reset + boot
         if trial:
             await RisingEdge(dut.clk)   # leave any ReadOnly a probe ended in
@@ -151,5 +153,6 @@ async def test_rf_flip_campaign(dut):
         # RF and livelocked - measured the hard way)
 
     dut._log.info(f"campaign: {survived} survived, {rebooted} rebooted, "
-                  f"{zombies} zombies (cleared), 0 permanently silent of 6")
-    assert survived + rebooted + zombies == 6
+                  f"{zombies} zombies (cleared), 0 permanently silent "
+                  f"of {trials}")
+    assert survived + rebooted + zombies == trials
