@@ -1,6 +1,0 @@
-<testsuites name="results">
-  <testsuite name="all" package="all">
-    <property name="random_seed" value="1786260977" />
-    <testcase name="test_rf_flip_campaign" classname="test_campaign" file="/tmp/claude-1000/-home-hasanmelih-Documents/cdd93f8e-b0c3-4a01-afa1-085c143697d9/scratchpad/zirh2/test/test_campaign.py" lineno="92" time="536.0183620452881" sim_time_ns="154146200.0" ratio_time="287576.34236973437" />
-  </testsuite>
-</testsuites>

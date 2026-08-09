@@ -11,3 +11,4 @@ macro/runs/
 *.vcd
 *.fst
 *.fst.hier
+test/*.xml
