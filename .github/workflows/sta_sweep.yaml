@@ -1,0 +1,72 @@
+# =============================================================================
+# ZIRH-2 - STA robustness sweep (cycle 6)
+#
+# Answers one question with four hardening runs: is the +27 ps
+# fast-corner hold margin a PROPERTY OF THE RECIPE or a knife-edge?
+# OpenROAD's placer is deterministic - there is no seed to sweep (checked
+# against resolved.json) - so robustness is probed the honest way: small
+# perturbations of the winning run-13 configuration. If the margin
+# survives density plus/minus one point and a clock-period nudge, it is
+# the recipe; if any point flips negative, the edge is real and SCOPE
+# gets a warning.
+#
+# Each matrix job hardens through the same TT action as the production
+# gds build (the perturbation is patched into src/config.json first),
+# then scripts/sta_extract.py renders the verdict: per-corner
+# setup/hold slack and violation counts, worst clock skews, chain-A
+# macro clock latencies, macro-touching hold paths. A job FAILS if any
+# corner goes negative - the sweep's pass/fail IS the timing verdict.
+#
+# Manual trigger: four ~50-minute hardening runs are a deliberate spend.
+# =============================================================================
+
+name: sta_sweep
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sweep:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: baseline
+            patch: '{}'
+          - name: density-78
+            patch: '{"PL_TARGET_DENSITY_PCT": 78}'
+          - name: density-80
+            patch: '{"PL_TARGET_DENSITY_PCT": 80}'
+          - name: clock-39
+            patch: '{"CLOCK_PERIOD": 39}'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Apply the perturbation
+        run: |
+          jq --argjson p '${{ matrix.patch }}' '. + $p' src/config.json \
+            > /tmp/patched.json
+          mv /tmp/patched.json src/config.json
+          echo "=== ${{ matrix.name }} ==="
+          jq '{PL_TARGET_DENSITY_PCT, CLOCK_PERIOD}' src/config.json
+
+      - name: Build GDS
+        uses: TinyTapeout/tt-gds-action@ttihp26b
+        with:
+          pdk: ihp-sg13g2
+
+      - name: Extract the sweep verdict
+        run: |
+          python3 scripts/sta_extract.py runs/wokwi \
+            --json sta_${{ matrix.name }}.json | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Upload verdict
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sta_sweep_${{ matrix.name }}
+          path: sta_${{ matrix.name }}.json
