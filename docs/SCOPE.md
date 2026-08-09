@@ -443,3 +443,18 @@ all aboard at N=32: utilization 83.3%, setup +24.4 ns, hold clean at
 every corner (+27 ps fast, +164 ps typical, +403 ps slow, zero
 violating endpoints), DRC/LVS/antenna zero, 3594 netlist flops plus
 three 32-flop macros = 3690 exactly as the synthesis gates count.
+
+## STA robustness: the density target sits at the hold edge (2026-08-09)
+
+The run-13 placement recipe was probed with a perturbation sweep (there
+is no seed to sweep - OpenROAD's placer is deterministic). One point
+returned a verdict before a runner-capacity pileup hung the rest: at
+PL_TARGET_DENSITY_PCT 80, one point above the winning 79, the design
+hardens normally and then FAILS signoff STA on hold violations. So the
++27 ps fast-corner hold margin has no headroom on the density-up side -
+79 is clean at every corner (proven twice, run-13 and its verification
+rerun), 80 is not. The target is not a comfortable middle; it is the
+highest legal value, chosen at the edge, and it must not drift up. The
+scripts/sta_extract.py verdict tool and the sta_sweep workflow remain
+for a serialized re-run (one hardening at a time - a four-way fan-out
+starves this account's runners).
