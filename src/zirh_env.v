@@ -101,7 +101,17 @@ endmodule
     input  wire arm_n_i,    // active low: clear and re-arm the latch
     output wire caught_o
 );
-`ifdef ZIRH_ENV_BEHAV
+`ifdef SYNTH
+    // FPGA twin: the analog catch chain does not exist, so the only
+    // stimulus is the firmware's 'E' self-test pulse (two cycles wide).
+    // A pass-through follows it - the controller's 2-flop synchronizer
+    // still edge-detects exactly one catch - and it carries no latch,
+    // which iCE40 has no primitive for. Real transient capture is a
+    // silicon-only capability, recorded as a twin/silicon delta.
+    assign caught_o = test_i & arm_n_i;
+`elsif ZIRH_SIM_ENV
+    // cocotb: the level-sensitive catch latch, so the unit suite can
+    // exercise the arm / hold / re-arm semantics the silicon latch has
     wire chain_out = test_i;
     reg q;
     always @* begin
