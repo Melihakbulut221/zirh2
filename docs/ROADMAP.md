@@ -46,9 +46,15 @@ until a shuttle decision opens a die budget.
 - SG13G2 hardened-macro kit: zirh_tmr_lib + keep_hierarchy discipline +
   check_tmr methodology + macro hardening workflow + the run-13
   placement recipe as documented flow defaults.
-- Safe-state TMR FSM generator (emits the CAN/SpW pattern plus its own
-  check gates - retires the per-definition counting gotcha as a human
-  error class).
+- Safe-state TMR FSM generator - LANDED (cycle 9):
+  scripts/tmr_fsm_gen.py emits the CAN/SpW pattern from a JSON spec
+  (states, recovery state, priority-ordered transitions): voted-feedback
+  TMR state register, case-default trap to the recovery state, and -
+  the point - the tmr-guard manifest entry with replica and flop counts
+  COMPUTED (width x 3 + 1 err flop; power-of-two state counts widen one
+  bit so a trap always exists). Closed-loop proven: a generated 5-state
+  FSM verified by tmr-guard at exactly the predicted 3 replicas / 10
+  flops, stripped copy correctly failing.
 - TMR interface IP mini-library (CAN/SpW/RS-422 cores with golden
   models and attestations; Gaisler-style per-project licensing).
 - Radiation-canary soft macro (TID RO + SET catcher + burst correlator
