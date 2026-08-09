@@ -60,3 +60,35 @@ survived/rebooted/zombie contract against real gates before beam time.
 The rehearsal that finds a broken script or a miswired counter on the
 bench for free is the rehearsal that does not find it at hour three of
 eight on the beamline.
+
+## Measured fit (2026-08-09) - the twin needs a bigger board
+
+The bitstream build settled the open feasibility question with a hard
+number: the full five-interface ZIRH-2 is **5565 of 5280 iCE40UP5K
+logic cells, 105%** - it does not fit. The repository's earlier ~3540
+LUT estimate was the pre-interface v2.1 design; CAN, SpaceWire, the
+telemetry mirror, the environment instruments and the N=32 A/B chains
+added the rest.
+
+The ROM-to-BRAM lever was applied (registered reads under SYNTH map
+the 256x32 array to 8 SB_RAM40_4K blocks) and bought only ~20 LCs: the
+bulk is logic - TMR triplication, SERV, and the five protocol engines -
+not memory, so no memory lever closes a 285-LC gap.
+
+The honest options, a hardware decision for the bench:
+
+1. **A larger iCE40 / ECP5 board.** iCE40HX8K (7680 LCs) fits the whole
+   design with margin on the same icestorm/nextpnr flow; an ECP5 board
+   (Lattice, ~85k LUT) is generous headroom. Either needs a top wrapper
+   outside the TT ASIC-sim flow (the flow is fixed to UP5K), which is
+   ~a day of pin-mapping and a constraints file - the eval-kit path the
+   commercial analysis wanted anyway.
+2. **A twin-lite config on UP5K.** Drop the two interface experiments
+   (CAN + SpaceWire are loopback-only on the bench and cost ~600 LCs
+   together) and the design fits UP5K comfortably - a valid demo of the
+   SEU/TID/SET instruments, the SERV computer, the watchdog and the
+   telemetry, just without the two protocol experiments. A SYNTH-time
+   `ZIRH_TWIN_LITE` guard would gate them out.
+
+The registered-ROM change stays regardless: it is correct, SYNTH-only,
+ASIC-untouched, and it is the right thing for any FPGA target.
