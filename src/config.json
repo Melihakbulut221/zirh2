@@ -12,6 +12,8 @@
   "//pad": "measured semantics: GPL_CELL_PADDING is TOTAL sites split left/right - 1 rounds to 0/0 (no padding at all; the runs that claimed one site ran bare) and 2 becomes 1/1, which inflated the padded area until GPL forced density to 0.98 and 53 cells went homeless. So no padding, and the slack comes from the density target instead",
   "GPL_CELL_PADDING": 0,
   "RUN_POST_GRT_RESIZER_TIMING": true,
+  "//disp": "the last ten homeless cells are hold buffers for one contiguous flop bank whose neighborhood is packed; the legalizer's default vertical search radius (100 um) cannot carry them over the 102 um macro band at the bottom of a 306 um die. 250 um reaches any row from any row",
+  "PL_MAX_DISPLACEMENT_Y": 250,
   "GRT_RESIZER_HOLD_SLACK_MARGIN": 0.06,
   "RUN_LINTER": 1,
   "LINTER_INCLUDE_PDK_MODELS": 1,
