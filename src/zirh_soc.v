@@ -106,6 +106,7 @@ module zirh_soc #(
     wire        rom_dbus_cyc;
 
     zirh_rom #(.HEX(ROM_HEX)) u_rom (
+        .clk     (clk),
         .i_adr_i (ibus_adr),
         .i_rdt_o (ibus_rdt),
         .cyc_i   (rom_dbus_cyc),
