@@ -51,9 +51,17 @@
     output wire [15:0] cnt_o
 );
 `ifdef ZIRH_SIM_ENV
+`define ZIRH_ENV_BEHAV
+`endif
+`ifdef SYNTH
+`define ZIRH_ENV_BEHAV
+`endif
+`ifdef ZIRH_ENV_BEHAV
     // behavioral stand-in: one count per clk cycle while enabled, so a
     // 1024-cycle window reads back ~1024 - the control path is what the
-    // simulation verifies, the real frequency only exists in silicon
+    // simulation verifies, the real frequency only exists in silicon.
+    // Selected for cocotb (ZIRH_SIM_ENV) and the FPGA twin (SYNTH); the
+    // SG13G2 ASIC synth defines neither and gets the real cells below.
     wire ro_out = en_i & clk;
 `else
     localparam integer STAGES = 64;   // even; NAND adds the odd inversion
@@ -93,7 +101,7 @@ endmodule
     input  wire arm_n_i,    // active low: clear and re-arm the latch
     output wire caught_o
 );
-`ifdef ZIRH_SIM_ENV
+`ifdef ZIRH_ENV_BEHAV
     wire chain_out = test_i;
     reg q;
     always @* begin
