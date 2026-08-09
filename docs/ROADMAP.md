@@ -19,7 +19,7 @@ until a shuttle decision opens a die budget.
 | # | Item | Why (commercial x engineering) | Effort | Status |
 |---|------|-------------------------------|--------|--------|
 | 1 | crt0 register-file scrub | Closes the measured RF-residue reboot hole; must land before the GL campaign baselines firmware-dependent counts | S | DONE (cycle 1) |
-| 2 | TMR-Guard: manifest-driven check_tmr CLI | Sharpest commercial pain (synthesis silently deletes TMR; no independent verifier exists on the market), smallest effort - the methodology and the negative test are already written | S | OPEN |
+| 2 | TMR-Guard: manifest-driven check_tmr CLI | Sharpest commercial pain (synthesis silently deletes TMR; no independent verifier exists on the market), smallest effort - the methodology and the negative test are already written | S | DONE (cycle 2) |
 | 3 | GL fault campaign on the routed netlist | The survived/rebooted/zombie contract has never run on the netlist that will fly; highest chance of a real find before submission | M | OPEN |
 | 4 | Campaign orchestration library | One classifier and injection DSL for RTL, GL, twin and beam backends; this IS the qual-pipeline product seed, and the zombie taxonomy is its unfair advantage | M | OPEN |
 | 5 | Ground console: fluence + cross-section + dual-port decode | At ~USD 3k/hour beam rates, live yield accounting pays for itself in one shift; the mirror stream cross-check is built but software never exploits it | M | OPEN |
@@ -62,4 +62,12 @@ until a shuttle decision opens a die budget.
 - CYCLE 1 (2026-08-09): crt0 RF scrub LANDED - 31 boot-time writes,
   checksum 0xF4 (227/256 ROM words used), firmware-dependent counts
   unmoved (soc 2160 / top 3690), soc 3/3, integration 6/6, z2 3/3
-  against the scrubbed mask. Next: cycle 2 = TMR-Guard manifest CLI.
+  against the scrubbed mask.
+- CYCLE 2 (2026-08-09): TMR-Guard LANDED - scripts/tmr_guard.py, a
+  manifest-driven independent TMR synthesis-survival verifier with
+  machine-readable reports and a --prove-checker mode that strips the
+  protection attribute from a source copy and requires every check to
+  FAIL there. Self-test on this design: 7/7 positive, 7/7 negative.
+  Both field-measured counting gotchas (per-definition selection,
+  post-techmap DFF summing) are handled in the tool, not in comments.
+  Next: cycle 3 = GL fault campaign on the routed netlist.

@@ -1,0 +1,30 @@
+{
+  "src_dir": "../src",
+  "defines": ["ZIRH_SIM_ENV"],
+  "replica_pattern": "zirh_tmr_ff",
+  "protection_attribute": "keep_hierarchy",
+  "checks": [
+    {"name": "clk_rst", "top": "zirh_clk_rst",
+     "sources": ["zirh_tmr_lib.v", "zirh_clk_rst.v"],
+     "replica_pattern": "zirh_rst_sync_rep",
+     "expect_instances": 3, "expect_ffs": 79},
+    {"name": "hk", "top": "zirh_hk",
+     "sources": ["zirh_tmr_lib.v", "zirh_tmr_ff32.v", "zirh_hk.v"],
+     "expect_instances": 25, "expect_ffs": 706},
+    {"name": "tlm2", "top": "zirh_tlm2",
+     "sources": ["zirh_tmr_lib.v", "zirh_tlm2.v"],
+     "expect_instances": 6, "expect_ffs": 213},
+    {"name": "env", "top": "zirh_env",
+     "sources": ["zirh_tmr_lib.v", "zirh_env.v"],
+     "expect_instances": 9, "expect_ffs": 125},
+    {"name": "can", "top": "zirh_can",
+     "sources": ["zirh_tmr_lib.v", "zirh_can.v"],
+     "expect_instances": 6, "expect_ffs": 220},
+    {"name": "spw", "top": "zirh_spw",
+     "sources": ["zirh_tmr_lib.v", "zirh_spw.v"],
+     "expect_instances": 6, "expect_ffs": 151},
+    {"name": "ifc", "top": "zirh_ifc",
+     "sources": ["zirh_tmr_lib.v", "zirh_can.v", "zirh_spw.v", "zirh_ifc.v"],
+     "expect_instances": 9, "expect_ffs": 376}
+  ]
+}
