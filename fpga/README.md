@@ -92,3 +92,36 @@ The honest options, a hardware decision for the bench:
 
 The registered-ROM change stays regardless: it is correct, SYNTH-only,
 ASIC-untouched, and it is the right thing for any FPGA target.
+
+## Twin-lite (2026-08-12) - the UP5K configuration, built and green
+
+Option 2 is now implemented and is the DEFAULT whenever SYNTH is
+defined: the TT FPGA flow is fixed to the UP5K, the full design
+measured over it, so under SYNTH the two interface experiments are
+gated out at the top level. A larger-board wrapper defines
+`ZIRH_TWIN_FULL` to restore them; the ASIC flow defines neither and is
+untouched.
+
+What lite means on the bench: everything in the bring-up procedure
+above works except step 3's 'k'/'K'/'w'/'W' - the interface register
+window still acks (reads as zero) so those commands are harmless
+no-ops, never a bus timeout. CAN idles recessive, SpaceWire idles low.
+The SEU/TID/SET instruments, the SERV computer, the watchdog, both
+telemetry voices and the whole campaign contract are all present.
+
+Measured (yosys synth_ice40): full 3770 LUT4 / ~1850 FF, lite
+3038 LUT4 / ~1640 FF - the experiments cost 733 LUTs, more than the
+~600 estimated, and scaling the earlier nextpnr fit by the LUT ratio
+puts lite at roughly 4500 of 5280 LCs (~85%). The bitstream CI run is
+the definitive fit number.
+
+Building lite exposed a real twin bug, now fixed: the SYNTH ROM
+registered its data-port reads (the BRAM lever) but still acked
+combinationally, so the CPU sampled dbus reads one cycle early - the
+same stale-read command-path corruption the ASIC dbus experiment hit.
+Every twin bitstream since the BRAM lever carried it; the full-chip
+suite had simply never run under SYNTH until lite forced it. The ack
+is now registered to land with the data, and the full suite passes
+under SYNTH in both configurations (lite 5/5 with the interface test
+excluded by construction, full 6/6 including the CAN/SpaceWire
+loopbacks - so the full twin is also proven for a larger board).

@@ -34,6 +34,18 @@
 
 `default_nettype none
 
+// The FPGA twin defaults to the LITE configuration: the TinyTapeout FPGA
+// flow is fixed to the iCE40UP5K and the full five-interface design measured
+// 5565 of 5280 logic cells there (fpga/README.md), so under SYNTH the two
+// interface experiments (CAN + SpaceWire, loopback-only on the bench) are
+// gated out. A larger-board wrapper defines ZIRH_TWIN_FULL to restore them.
+// The ASIC flow never defines SYNTH and is untouched by any of this.
+`ifdef SYNTH
+`ifndef ZIRH_TWIN_FULL
+`define ZIRH_TWIN_LITE
+`endif
+`endif
+
 module tt_um_hma_zirh2 #(
     parameter ROM_HEX = "",
     parameter INTERVAL_LOG2 = 16,
@@ -154,6 +166,18 @@ module tt_um_hma_zirh2 #(
   // --- interface experiments (slot 3 upper half) ----------------------------
   wire can_tx, spw_dout, spw_sout, err_ifc;
 
+`ifdef ZIRH_TWIN_LITE
+  // Twin-lite: the interface experiments are absent. Their register window
+  // still acks (reads as zero) so the firmware command path never hangs on
+  // a dead slot - 'k'/'K'/'w'/'W' become harmless no-ops. CAN idles
+  // recessive, SpaceWire idles low, and the experiment pins are inert.
+  assign ifc_rdt  = 32'h0;
+  assign ifc_ack  = s3_cyc & s3_ifc;
+  assign can_tx   = 1'b1;
+  assign spw_dout = 1'b0;
+  assign spw_sout = 1'b0;
+  assign err_ifc  = 1'b0;
+`else
   zirh_ifc #(
       .CAN_DIV(CAN_DIV), .SPW_DIV(SPW_DIV),
       .SPW_T_RESET(SPW_T_RESET), .SPW_T_WAIT(SPW_T_WAIT),
@@ -175,6 +199,7 @@ module tt_um_hma_zirh2 #(
       .spw_sout_o(spw_sout),
       .err_tmr_o (err_ifc)
   );
+`endif
 
   // --- environment monitor (TID oscillator, SET catcher, burst) ------------
   wire [31:0] env_ro_word, env_sb_word;
@@ -246,6 +271,9 @@ module tt_um_hma_zirh2 #(
 
   wire _unused = &{ena, ui_in[7:4], ui_in[2:0], uio_in[7:6],
                    uio_in[5:4], uio_in[1], tick16, tick256, 1'b0};
+`ifdef ZIRH_TWIN_LITE
+  wire _unused_lite = &{uio_in[0], uio_in[3:2], 1'b0};
+`endif
 
 endmodule
 
