@@ -110,3 +110,22 @@ synchronous memory read, MEMORY_DFF, dissolving the comb cone),
 dbus left combinational so the command path is byte-identical. All
 software cycles plus the ASIC verification are now complete; the open
 items are the twin board decision and ZIRH-3 silicon.
+
+## Cycle 10 (2026-08-13): the pre-beam prediction campaign
+
+The systematic gate-level SEU sweep is in the gl_test job and green on
+the shipped netlist: 384 exhaustive singles (every replica flop of both
+chains, both pattern phases) landed as exactly one RAW count each with
+ZERO escapes; the 192 cross-replica pairs mapped the escape window to
+same-bit-same-cycle and nothing else - simultaneous same-bit pairs
+escape exactly once each, staggered and split-bit pairs never.
+scripts/seu_predict.py folds the final-DEF distances over the escape
+window: chain B's closest same-bit pair is 3.78 um (35 pairs under
+5 um), chain A's macro floor is 680 um - so the beam escape ratio
+measures spatial double-upset probability and nothing else.
+docs/PREDICTION.md registers the falsifiable pre-beam claim,
+docs/PAPER.md is the manuscript draft around it (RADECS/NSREC track).
+Also closed on the way: twin-lite (4612/5280 LC, 87%, bitstream green),
+the twin ROM ack-timing bug, and the local GL recipe hardened against
+reboots (TT iverilog v13 permanent in ~/.local/opt - vanilla v12 reads
+the whole die X, the day's most expensive lesson).

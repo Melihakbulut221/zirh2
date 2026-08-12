@@ -86,7 +86,7 @@ TOPLEVEL = tb
 # Gate-level runs add the netlist fault campaign - the contract on the
 # netlist that flies; in RTL runs the module self-skips.
 ifeq ($(GATES),yes)
-COCOTB_TEST_MODULES = test,test_gl_campaign
+COCOTB_TEST_MODULES = test,test_gl_campaign,test_gl_seu_sweep
 else
 COCOTB_TEST_MODULES = test
 endif
