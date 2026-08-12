@@ -72,7 +72,22 @@ module zirh_rom #(
     assign rdt_o   = rdt_r;
     assign ack_o   = cyc_i;
 `else
-    assign i_rdt_o = mem[i_adr_i[9:2]];
+    // ASIC: register ONLY the instruction fetch port. This is a routing
+    // fix, measured: the scrubbed mask's constants reshaped the flat
+    // 256x32 combinational fetch mux into a congestion pocket global
+    // routing could not clear (four six-hour runs plateaued at ~5k
+    // shorts). Pipelining just that mux dissolves the cone. Timing-safe -
+    // the SoC's ibus_ack is already one cycle delayed, so the registered
+    // fetch lands exactly on the ack cycle SERV samples (proven: full
+    // boot / command path / checksum in simulation). The dbus port stays
+    // combinational so the 'R' checksum read is byte-identical - and it
+    // is registering the DBUS read that broke the command path, which is
+    // why only the fetch mux is pipelined. The 32 fetch flops are
+    // ordinary pipeline registers; the ROM contents stay synthesized
+    // constants (the SEU immunity is about where bits live).
+    reg [31:0] i_rdt_a;
+    always @(posedge clk) i_rdt_a <= mem[i_adr_i[9:2]];
+    assign i_rdt_o = i_rdt_a;
     assign rdt_o   = mem[adr_i[9:2]];
     assign ack_o   = cyc_i;
 `endif
