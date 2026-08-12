@@ -89,3 +89,24 @@ until a shuttle decision opens a die budget.
   PINNED cell models, and TinyTapeout's patched iverilog v13 (vanilla
   icarus leaves the models' $setuphold delayed nets undriven and the
   whole die reads X - proven on a single cell).
+
+## VERIFICATION CLOSED (2026-08-12): the nine-cycle RTL is green
+
+After the multi-day placement/routing fight, gds+precheck+gl_test+viewer
+all pass on the full nine-cycle design (commit with the ibus-fetch
+pipeline). Final: utilization 83.3%, setup +22.0 ns, hold clean every
+corner (+26 ps fast, +165 ps typ, +405 ps slow, zero violations),
+DRC/LVS/antenna zero. The GL fault campaign ran in CI for the FIRST
+time - test_gl_campaign 8/8 in gl_test, so the survived/rebooted/zombie
+contract is now proven on the netlist that flies, not just RTL.
+
+Root cause of the routing crisis, for the record: the boot RF-scrub
+mask filled ROM words the pre-scrub mask left zero, denying synthesis
+the constant-folding that kept the flat 256x32 combinational fetch mux
+routable; four six-hour runs plateaued at ~5k shorts and three
+placement configs proved it structural, not a placement draw. Fix:
+register only the instruction-fetch read port (yosys merges it into a
+synchronous memory read, MEMORY_DFF, dissolving the comb cone),
+dbus left combinational so the command path is byte-identical. All
+software cycles plus the ASIC verification are now complete; the open
+items are the twin board decision and ZIRH-3 silicon.
