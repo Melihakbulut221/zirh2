@@ -255,3 +255,14 @@ requirements:
     evidence: unit suites with -DZIRH_ASSERTIONS armed; formal.sh
       proofs compile the same macros under -DFORMAL
 
+  - id: R25
+    text: The QSPI-MRAM controller shall stream stored bytes exactly,
+      in both single and quad widths, freeze the clock without loss
+      under consumer backpressure, release the bus on abort or trap,
+      and feed the boot path end to end - MRAM to verified bank.
+    tests:
+      - src/zirh_qspi.v
+      - test/test_qspi.py
+    evidence: ci.yaml units job (x1, stalled x1, x4, abort, and the
+      full boot-from-MRAM into the SECDED SRAM)
+

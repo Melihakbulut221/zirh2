@@ -385,3 +385,20 @@ dosimeter into an absolute instrument, and the worst-case SEL
 experiment with its current-signature machinery - sequenced so TID
 runs first on cheaper irradiator time and SEL rides the ion shift's
 final hot run.
+
+## Cycle 22 (2026-08-15): the MRAM leg - the A5 chain closes in
+## simulation
+
+zirh_qspi is the chip-side piece of the persistent-memory
+architecture: SPI mode 0, standard READ on one lane and quad-output
+READ with dummy cycles on four, the byte stream landing directly on
+the boot controller's transport-agnostic port. Flow control belongs
+to the consumer - a stalled stream freezes SCK with CS held, and the
+transfer resumes without losing a bit (proven under seventy percent
+random backpressure). Abort and the TMR trap both release the bus
+immediately: a mangled controller must let go, never hold the MRAM
+hostage. The crown of the suite is the whole A5 chain in one test: a
+firmware image in behavioral MRAM, streamed by the controller,
+CRC-verified on stored data by the boot controller, committed into
+the five-macro SECDED SRAM, boot_sel flipped - the architecture the
+product will fly, green in simulation before any board exists.
