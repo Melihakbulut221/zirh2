@@ -79,6 +79,8 @@ jobs:
         run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.bist
       - name: debug gate suite (flight lock)
         run: make -C test -B -f Makefile.dbg
+      - name: clock-loss observer suite
+        run: make -C test -B -f Makefile.clkobs
       - name: bare macro smoke
         run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.sram
       - name: QSPI-MRAM suite (both widths, abort, boot-from-MRAM)

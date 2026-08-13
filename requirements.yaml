@@ -266,3 +266,15 @@ requirements:
     evidence: ci.yaml units job (x1, stalled x1, x4, abort, and the
       full boot-from-MRAM into the SECDED SRAM)
 
+  - id: R26
+    text: An independent-clock observer shall detect the death of the
+      external clock, report it as a sticky event with a survivor
+      count, and detect recovery - from a domain the failure cannot
+      reach.
+    tests:
+      - src/zirh_clkobs.v
+      - test/test_clkobs.py
+    evidence: ci.yaml units job (hand-driven main clock killed and
+      resurrected twice; detection, sticky semantics and the count
+      all asserted)
+

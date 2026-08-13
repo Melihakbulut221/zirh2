@@ -402,3 +402,20 @@ firmware image in behavioral MRAM, streamed by the controller,
 CRC-verified on stored data by the boot controller, committed into
 the five-macro SECDED SRAM, boot_sel flipped - the architecture the
 product will fly, green in simulation before any board exists.
+
+## Cycle 23 (2026-08-15): the watchman who does not sleep
+
+zirh_clkobs is the C11 item the brief said to pull forward: the
+external clock is a failure the die cannot see from inside its own
+domain, because every flop that could report the death dies with it.
+The observer lives on an independent ring-oscillator clock and
+watches the main domain's heartbeat from outside - a two-flop
+synchronizer, an idle counter that declares loss, a recovery counter
+that restores the level, a sticky event and a survivor count for
+telemetry, all TMR on the observer clock. The suite hand-drives the
+main clock precisely so it can genuinely kill it - a cocotb Clock
+cannot die - and asserts detection, recovery, sticky semantics and
+the second death counted. The ASIC ring binds with the zirh_env_ro
+hand-instantiated cell discipline at the product-chip step; the
+module deliberately carries no main-clock assertions, because the
+main clock is the thing that dies.
