@@ -100,6 +100,24 @@ few um - Amusan et al. TNS 2006, Narasimham et al.):
    tilt would falsify claim 1 and bound lambda below the 3.78 um
    closest pair.
 
+## Formal strengthening (2026-08-13)
+
+The escape window is now also PROVEN, not only sampled. A formal
+harness (formal/f_ring.sv) wraps the shipped replica primitive in the
+shipped voted-feedback structure and shows by unbounded k-induction
+(yosys-smtbmc, z3; scripts/formal.sh; ring widths 4, 8 and the
+shipping 32) that under an arbitrary infinite stream of upsets - any
+number of bits per cycle, any bits, confined to ONE replica per cycle -
+the voted output equals the golden ring in every bit of every cycle.
+This is stronger than the sweep's 384 singles: even multi-bit upsets
+inside one replica are contained, every cycle, forever. The
+complementary cover property makes the solver itself produce the
+escape trace for a same-bit two-replica hit (docs/fig/
+escape_witness.png): the broken majority enters the feedback and
+walks the ring to the output. Claim 2's mechanism is therefore
+machine-checked at both ends: singles cannot escape (induction),
+same-bit pairs must (witness).
+
 ## Method note
 
 Injection mechanics: Force/Release on the replica output nets

@@ -140,6 +140,19 @@ upset in two replicas within one clock cycle, and the two chains are
 logically indistinguishable in this response. Everything that can
 differ under beam is therefore spatial.
 
+**Formal closure of the window.** The injection campaign samples; a
+formal harness proves. The shipped replica primitive and the shipped
+voted-feedback structure, wrapped with free upset inputs, are checked
+by unbounded k-induction (yosys-smtbmc with z3) at ring widths 4, 8
+and the shipping 32: under an arbitrary infinite upset stream
+confined to one replica per cycle - any bits, every cycle - the voted
+output equals a golden reference in every bit of every cycle. The
+dual cover property lets the solver construct the escape itself
+(Fig. 1): a same-bit two-replica hit breaks the majority, the corrupted
+vote enters the feedback, and the wrong bit walks the ring to the
+output. The escape window claim is thus machine-checked in both
+directions rather than inferred from samples.
+
 **Layout metric.** From the final DEF, the distance between same-bit
 replica flops: chain B has 96 same-bit pairs with minimum 3.78 um,
 median 7.62 um, and 35 pairs closer than 5 um; chain A's floor is the
@@ -149,6 +162,12 @@ single-particle escape ratio B/A exceeds 10^100 for any lambda between
 0.25 and 4 um - that is, chain A single-particle escapes are not rare
 but excluded, for any physically plausible collection range at this
 node [1].
+
+![Fig. 1 - the escape, drawn by the solver: a same-bit double hit
+(flip_a = flip_b = 0x08) corrupts two replicas, the broken majority
+enters the voted feedback (all three replicas agree wrong one cycle
+later), and the error walks the ring to the output while the golden
+ring stays clean.](fig/escape_witness.png)
 
 ## IV. Simulation results
 
