@@ -1,0 +1,33 @@
+# ZIRH - corner-timing GL simulation (G30): the shipped netlist with
+# the hardening run's own SDF, at the military-range corners.
+#
+#   PDK_ROOT=~/.ciel CORNER=nom_slow_1p08V_125C make -f Makefile.sdf
+#
+# Runs the boot smoke (frame + living signature) at real corner
+# delays plus the X-propagation pin monitor. Heavy: minutes to tens
+# of minutes per corner - per hardening release, not per push.
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRC_DIR = $(PWD)/../src
+CORNER ?= nom_slow_1p08V_125C
+SDF_DIR ?= $(PWD)/sdf
+
+SIM_BUILD = sim_build/sdf
+
+COMPILE_ARGS += -gspecify
+COMPILE_ARGS += -DGL_TEST -DFUNCTIONAL -DSIM
+COMPILE_ARGS += -I$(SRC_DIR)
+VERILOG_SOURCES += $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_io/verilog/sg13g2_io.v
+VERILOG_SOURCES += $(wildcard $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_stdcell/verilog/sg13g2_udp.v)
+VERILOG_SOURCES += $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_stdcell/verilog/sg13g2_stdcell.v
+VERILOG_SOURCES += $(PWD)/../macro/hardened32/zirh_tmr_ff32.nl.v
+VERILOG_SOURCES += $(PWD)/gate_level_netlist.v
+VERILOG_SOURCES += $(PWD)/tb.v
+VERILOG_SOURCES += $(PWD)/sdf_load.v
+
+COCOTB_PLUSARGS += +SDF=$(SDF_DIR)/tt_um_hma_zirh2__$(CORNER).sdf
+
+TOPLEVEL = tb
+COCOTB_TEST_MODULES = test_sdf
+
+include $(shell cocotb-config --makefiles)/Makefile.sim

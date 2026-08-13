@@ -3,3 +3,4 @@ torture.hex
 torture_last.log
 cov/
 arch/out/
+sdf/

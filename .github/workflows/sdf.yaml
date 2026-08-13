@@ -1,0 +1,64 @@
+# =============================================================================
+# ZIRH - corner-timing GL simulation (PROGRAM.md G30)
+#
+# The shipped netlist with the hardening run's own SDF at the three
+# characterized corners, including both military-range extremes. Too
+# heavy for every push - dispatch it per hardening release: it
+# downloads the GDS_logs artifact of the run you name, stages netlist
+# plus SDF from the SAME run (never mix), and boots the chip at real
+# delays with the X-propagation pin monitor armed.
+#
+#   gh workflow run sdf.yaml -f gds_run_id=<run id>
+# =============================================================================
+
+name: sdf
+
+on:
+  workflow_dispatch:
+    inputs:
+      gds_run_id:
+        description: gds workflow run id to take netlist+SDF from
+        required: true
+
+jobs:
+  corners:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    strategy:
+      matrix:
+        corner: [nom_slow_1p08V_125C, nom_typ_1p20V_25C,
+                 nom_fast_1p32V_m40C]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: install the TT iverilog (vanilla v12 reads the die X)
+        run: |
+          wget -q https://github.com/TinyTapeout/iverilog/releases/download/v13.0/iverilog_13.0-1_amd64.deb
+          sudo apt-get update -y
+          sudo apt-get install -y ./iverilog_13.0-1_amd64.deb
+          pip install -r test/requirements.txt
+
+      - name: cache the IHP PDK
+        uses: actions/cache@v4
+        with:
+          path: ~/.ciel
+          key: ciel-ihp-22f2a25f1734796de3debbbf29cf697cbbc54081
+      - name: install the pinned PDK
+        run: |
+          pip install ciel
+          ciel enable --pdk-family ihp-sg13g2 \
+            22f2a25f1734796de3debbbf29cf697cbbc54081
+
+      - name: stage netlist and SDF from the named hardening run
+        run: |
+          gh run download ${{ inputs.gds_run_id }} -n GDS_logs -D /tmp/gds
+          cp /tmp/gds/runs/wokwi/final/nl/*.nl.v test/gate_level_netlist.v
+          mkdir -p test/sdf
+          cp /tmp/gds/runs/wokwi/final/sdf/*/*.sdf test/sdf/
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: boot at ${{ matrix.corner }}
+        run: |
+          PDK_ROOT=$HOME/.ciel CORNER=${{ matrix.corner }} \
+            make -C test -B -f Makefile.sdf

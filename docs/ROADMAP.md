@@ -453,3 +453,21 @@ The one-pager sets the delivery ladder - open core now, support
 engagements as first revenue, the standalone split when an external
 user exists and not before - and leaves outreach, licensing and the
 split decision at the owner's gate where they belong.
+
+## Cycle 26 (2026-08-15): corner timing and X-propagation, in flight
+
+G30's flow is built: the shipped netlist simulates with the hardening
+run's OWN SDF at the three characterized corners including both
+military-range extremes, through a plusarg annotation shim that
+touches nothing else, with the X-propagation pin monitor armed in
+the same test - after boot, an unknown reaching any output pin fails
+the run. The support question was settled by a two-gate
+micro-experiment before trusting anything: the TT iverilog's
+sdf_annotate silently ignores min::max pairs WITHOUT a typical value
+and applies full triples correctly - and the OpenROAD SDF emits full
+triples, so the flow is sound; the lesson (an annotator that returns
+success is not an annotator that annotated - verify with a delay you
+can see) is now recorded. sdf.yaml runs the three-corner matrix on
+demand per hardening release, staging netlist and SDF from the SAME
+named run, never mixed. The slow-corner local run is in flight; its
+verdict lands in this entry's follow-up.
