@@ -66,4 +66,18 @@ echo "    PROVEN: matching fold decodes clean and exact; any fold"
 echo "            difference - every single-bit address flip - lands"
 echo "            UNCORRECTABLE, never clean, never miscorrected"
 
-echo "formal: rings, ECC contract and address mask proven, witnesses dumped"
+echo "=== debug gate: the lock is an absorbing trapdoor (F27) ==="
+$YOSYS -q -p "
+  read_verilog -sv -formal src/zirh_tmr_lib.v src/zirh_dbg_gate.v formal/f_dbg.sv
+  prep -top f_dbg
+  write_smt2 formal/out/dbg.smt2"
+$SMTBMC -s z3 --presat -t 12 formal/out/dbg.smt2
+$SMTBMC -s z3 --presat -i -t 12 formal/out/dbg.smt2
+$YOSYS -q -p "
+  read_verilog -sv -formal -DF_COVER src/zirh_tmr_lib.v src/zirh_dbg_gate.v formal/f_dbg.sv
+  prep -top f_dbg
+  write_smt2 formal/out/dbg_cover.smt2"
+$SMTBMC -s z3 --presat -c -t 6 formal/out/dbg_cover.smt2
+echo "    PROVEN: locked is inert and absorbing; the bench path exists"
+
+echo "formal: rings, ECC, address mask and debug lock proven, witnesses dumped"

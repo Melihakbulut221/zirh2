@@ -225,3 +225,24 @@ running, and the watchdog revert ladder walks bank to bank to golden
 with no ground contact. The signature hook (sig_ok_i) is in the FSM
 so the product chip's public-key verdict drops in without touching
 the flow.
+
+## Cycle 14 (2026-08-14): debug lock and the DFT plan
+
+docs/DEBUG-DFT.md registers F27/F28: the riscv-dbg + JTAG stack plan
+with the two rad-hard requirements a stock module lacks, and the DFT
+ladder (scan with voter-bypass and a tmr-guard scan check, the march/
+BIST engine over the macros' A_BIST ports serving production,
+flight self-test and the A6 beam experiment at once, IDDQ and
+screening modes, BSDL). The buildable piece is built: zirh_dbg_gate
+is the isolation boundary itself - the strap latches ONCE at POR
+(product: fuse), there is no software unlock because a register that
+can unlock is a register an upset can flip, every debug-to-system
+signal is AND-masked (a mux select upset could pass a live value; an
+AND with a voted zero is dead), and the TMR trap fails toward
+LOCKED. The suite hammers a locked gate with random debug garbage
+and sees zero leakage; the formal harness proves by induction that
+the verdict is absorbing - locked stays locked, open stays open,
+strap wiggling and upsets notwithstanding - and the cover shows the
+bench path exists. Brief v2 is registered verbatim in PROGRAM.md:
+the MRAM SiP architecture with capacity floors, the G test ladder
+(30-39) and the H repo-hygiene contract (40-49) are now the queue.
