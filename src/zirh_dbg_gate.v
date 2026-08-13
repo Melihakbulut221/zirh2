@@ -93,6 +93,12 @@ module zirh_dbg_gate (
     assign sba_adr_o   = dm_sba_adr_i   & {32{open_now}};
     assign sba_dat_o   = dm_sba_dat_i   & {32{open_now}};
 
+    `include "zirh_assert.vh"
+    // the boundary's whole contract, restated where it lives
+    `ZIRH_ASSERT(a_locked_inert,
+                 !locked_o || (!debug_req_o && !ndmreset_o
+                               && !sba_cyc_o && !sba_we_o))
+
     assign err_o = st_err;
 
 endmodule

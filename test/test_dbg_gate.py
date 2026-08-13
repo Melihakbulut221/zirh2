@@ -2,6 +2,7 @@
 import random
 
 import cocotb
+import fsm_cov
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, NextTimeStep, ReadOnly, RisingEdge
 
@@ -43,6 +44,7 @@ async def hammer(dut, cycles=200):
 @cocotb.test()
 async def test_dbg_gate(dut):
     cocotb.start_soon(Clock(dut.clk, 40, unit="ns").start())
+    _cov = fsm_cov.watch(dut, dut.u_st.q_o, "dbg")
     random.seed(1453)
 
     # flight: strap low at POR - everything inert under full hammering
@@ -83,5 +85,6 @@ async def test_dbg_gate(dut):
     assert int(dut.locked_o.value) == 0, "open gate must ignore the strap too"
     await NextTimeStep()
 
+    fsm_cov.dump("dbg", _cov)
     dut._log.info("dbg gate: flight lock inert under hammering, strap "
                   "dead after POR both ways, bench passthrough exact")

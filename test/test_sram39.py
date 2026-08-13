@@ -4,6 +4,7 @@
 import random
 
 import cocotb
+import fsm_cov
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, NextTimeStep, ReadOnly, RisingEdge
 
@@ -49,6 +50,7 @@ async def flip_stored_bit(dut, widx, bitpos):
 @cocotb.test()
 async def test_sram39_secded(dut):
     cocotb.start_soon(Clock(dut.clk, 40, unit="ns").start())
+    _cov = fsm_cov.watch(dut, dut.state, "sram39")
     dut.cyc_i.value = 0
     dut.scrub_en_i.value = 0
     dut.bist_start_i.value = 0
@@ -130,6 +132,7 @@ async def test_sram39_secded(dut):
     assert unc == 1 and corr == 0, (
         f"wrong-row data not flagged: corr={corr} unc={unc}")
 
+    fsm_cov.dump("sram39", _cov)
     dut._log.info("sram39: roundtrip, per-slice correction, scrub-on-read, "
                   "double-bit detection, corrupted-merge, background "
                   "scrubber heal, wrong-row detection all good")

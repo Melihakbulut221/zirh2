@@ -219,6 +219,13 @@ module zirh_sram_bist #(
         endcase
     end
 
+    `include "zirh_assert.vh"
+    // engine never touches the array outside its active states, and
+    // the element index stays inside the march table
+    `ZIRH_ASSERT(a_state_legal, st_q <= S_DONE)
+    `ZIRH_ASSERT(a_wen_gated, !bist_wen_o || busy_o)
+    `ZIRH_ASSERT(a_elem_legal, el_q <= LAST_ELEM)
+
 endmodule
 
 `default_nettype wire

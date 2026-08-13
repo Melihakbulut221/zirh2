@@ -225,3 +225,33 @@ requirements:
     evidence: ci.yaml trace job selftests (mock chip: smoke passes,
       broken sequence caught, quiet soak floor is zero)
 
+  - id: R22
+    text: The integrated core shall pass the riscv-arch-test rv32i
+      suite with signatures identical to the shipped references - the
+      wrapper, the fetch style and the memory integration did not
+      break the ISA.
+    tests:
+      - test/arch/tb_arch.v
+      - scripts/archtest.sh
+    evidence: arch.yaml (38/38 signatures matched against
+      riscv-arch-test 2.7.4 references)
+
+  - id: R23
+    text: Every product-program FSM arc shall be exercised by the
+      unit suites; an undriven arc or an unmapped transition shall
+      fail the build.
+    tests:
+      - test/fsm_cov.py
+      - scripts/coverage_report.py
+    evidence: ci.yaml units job coverage gate (26/26 arcs, POR arcs
+      classified)
+
+  - id: R24
+    text: Module self-invariants shall be stated once and consumed by
+      both simulation (fatal on violation) and formal (proof
+      obligation), and shall cost the silicon nothing.
+    tests:
+      - src/zirh_assert.vh
+    evidence: unit suites with -DZIRH_ASSERTIONS armed; formal.sh
+      proofs compile the same macros under -DFORMAL
+

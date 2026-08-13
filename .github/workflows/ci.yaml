@@ -81,6 +81,8 @@ jobs:
         run: make -C test -B -f Makefile.dbg
       - name: bare macro smoke
         run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.sram
+      - name: functional coverage gate - every FSM arc seen
+        run: python3 scripts/coverage_report.py
 
   trace:
     runs-on: ubuntu-24.04

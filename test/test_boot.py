@@ -3,6 +3,7 @@ import random
 import zlib
 
 import cocotb
+import fsm_cov
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, NextTimeStep, ReadOnly, RisingEdge
 
@@ -79,6 +80,7 @@ async def pulse(dut, sig):
 @cocotb.test()
 async def test_boot_contract(dut):
     cocotb.start_soon(Clock(dut.clk, 40, unit="ns").start())
+    _cov = fsm_cov.watch(dut, dut.u_boot.state_q, "boot")
 
     random.seed(2027)
 
@@ -167,6 +169,7 @@ async def test_boot_contract(dut):
         "second failure must land on the golden ROM")
     await NextTimeStep()
 
+    fsm_cov.dump("boot", _cov)
     dut._log.info("boot: accept/reject/fallback, golden strap, "
                   "interruption tolerance, ISP double-bank and the "
                   "watchdog revert ladder all good")

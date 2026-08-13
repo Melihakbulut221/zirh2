@@ -336,6 +336,13 @@ module zirh_boot_ctrl #(
     // verification read-back only: the stored image is the truth, the
     // stream is just transport (docs/BOOT.md fault model).
 
+    `include "zirh_assert.vh"
+    // states beyond S_RUN do not exist; a committed bank implies its
+    // valid flag; golden never fetches from SRAM
+    `ZIRH_ASSERT(a_state_legal, state_q <= S_RUN)
+    `ZIRH_ASSERT(a_sel_implies_valid,
+                 !sel_q || (pref_q ? vb_q : va_q))
+
     wire _unused = &{hver_q, 1'b0};
 
 endmodule

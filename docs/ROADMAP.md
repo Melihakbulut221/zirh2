@@ -344,3 +344,23 @@ All of it tested today against a mock of the chip's telemetry in CI:
 the smoke must pass on the healthy mock, must catch a broken
 sequence, and the quiet soak floor must be exactly zero. Silicon day
 is a key press. The traceability map grew R20 and R21 to claim both.
+
+## Cycle 20 (2026-08-15): coverage, single-source assertions and the
+## ISA verdict
+
+The last three hygiene items land. H44: zirh_assert.vh states each
+module's self-invariants once - simulation compiles them into fatal
+checks so every suite polices them continuously, formal compiles the
+same text into proof obligations, and the ASIC build compiles them
+into nothing. H42: the FSM coverage gate demands every expected arc
+of the four product-program FSMs was seen (26/26, with POR arcs a
+classified legality, and unmapped arcs failing the build so the map
+tracks the RTL). H46: the integrated serv_rf_top passes the full
+riscv-arch-test rv32i suite - 38 of 38 signatures identical to the
+shipped 2.7.4 references - through a harness that survived three
+honest fights: branch-test images overflowing 128 KB, the jal jump
+matrix demanding 2 MB, and modern binutils rejecting the suite's
+la-x0 idiom, solved by patching the PREPROCESSED text with an
+equal-size x0-write pair so layout and semantics both hold. The
+toolchain is the same pinned xpack gcc the firmware builds with;
+arch.yaml runs the suite in CI on every push.

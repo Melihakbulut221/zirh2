@@ -1,5 +1,6 @@
 # ZIRH P2 - the march/BIST engine: screening, fill and the beam scan.
 import cocotb
+import fsm_cov
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, NextTimeStep, ReadOnly, RisingEdge
 
@@ -48,6 +49,7 @@ async def run_bist(dut, mode, timeout=200_000):
 @cocotb.test()
 async def test_bist_engine(dut):
     cocotb.start_soon(Clock(dut.clk, 40, unit="ns").start())
+    _cov = fsm_cov.watch(dut, dut.u_bist.st_q, "bist")
     dut.cyc_i.value = 0
     dut.scrub_en_i.value = 0
     dut.bist_start_i.value = 0
@@ -85,6 +87,7 @@ async def test_bist_engine(dut):
     p, cnt, _, _ = await run_bist(dut, 0)
     assert p == 1 and cnt == 0, "march must screen clean after rewrite"
 
+    fsm_cov.dump("bist", _cov)
     dut._log.info("bist: march clean, cb+scan clean, scan detects and "
                   "preserves a disturbance at the right address, march "
                   "rescreens clean")

@@ -1,0 +1,40 @@
+# =============================================================================
+# ZIRH - ISA compliance (PROGRAM.md H46): riscv-arch-test rv32i on the
+# integrated SERV, signatures diffed against the suite's references.
+# The evidence that the wrapper, the fetch style and the memory
+# integration did not break the core.
+# =============================================================================
+
+name: arch
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  rv32i:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: install iverilog
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y iverilog
+
+      - name: install the pinned riscv toolchain (the fw.yaml recipe)
+        run: |
+          curl -sL -o /tmp/gcc.tar.gz \
+            https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/download/v15.2.0-1/xpack-riscv-none-elf-gcc-15.2.0-1-linux-x64.tar.gz
+          tar xzf /tmp/gcc.tar.gz -C /opt
+          echo "/opt/xpack-riscv-none-elf-gcc-15.2.0-1/bin" >> $GITHUB_PATH
+
+      - name: fetch riscv-arch-test 2.7.4 (the last release with
+              shipped reference signatures)
+        run: |
+          git clone --depth 1 --branch 2.7.4 \
+            https://github.com/riscv-non-isa/riscv-arch-test.git /tmp/archtest
+
+      - name: run the rv32i suite on the integrated core
+        run: ARCH_TEST=/tmp/archtest bash scripts/archtest.sh

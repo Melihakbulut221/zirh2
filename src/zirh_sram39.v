@@ -335,6 +335,12 @@ module zirh_sram39 #(
         end
     end
 
+    `include "zirh_assert.vh"
+    // the FSM has no legal fourth state; an ack cycle always finds the
+    // FSM back in IDLE (both ack paths return there as they fire)
+    `ZIRH_ASSERT(a_state_legal, state <= S_SCRUB_FIX)
+    `ZIRH_ASSERT(a_ack_from_idle, !ack_q || (state == S_IDLE))
+
     assign rdt_o = rdt_q;
     assign ack_o = ack_q;
 
