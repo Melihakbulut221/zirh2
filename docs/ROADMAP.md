@@ -438,3 +438,18 @@ TPA session without redesign. The bring-up plan makes the board
 provable before any facility: trip rehearsal on an electronic load,
 long-cable soak, and a full remote-only mock shift with the door
 shut - if anything needs a hand, fix the board, not the procedure.
+
+## Cycle 25 (2026-08-15): tmr-guard becomes a product
+
+E19 executed to its smallest-effort-first-revenue shape. The tool
+moves to its own home with a vendor-neutral thirty-line demo whose
+manifest numbers were measured, not declared - the tool's own
+philosophy applied to its own demo - and whose negative control IS
+the sales pitch: one command passes, the next strips the attributes
+and proves the checker catches the collapse it exists for. The
+flagship example is ZIRH-2's own ten-block manifest, and both now
+run in CI on every push, so the product demos itself continuously.
+The one-pager sets the delivery ladder - open core now, support
+engagements as first revenue, the standalone split when an external
+user exists and not before - and leaves outreach, licensing and the
+split decision at the owner's gate where they belong.

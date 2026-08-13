@@ -114,3 +114,7 @@ jobs:
           yosys -V
       - name: synthesis integrity - the TMR survives the optimizer
         run: bash scripts/check_tmr.sh
+      - name: tmr-guard product - flagship manifest
+        run: cd tmr-guard && python3 tmr_guard.py examples/zirh2.tmr.json
+      - name: tmr-guard product - demo with the negative control
+        run: cd tmr-guard/demo && python3 ../tmr_guard.py demo.tmr.json --prove-checker

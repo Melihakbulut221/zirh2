@@ -1,0 +1,10 @@
+{
+  "src_dir": ".",
+  "replica_pattern": "demo_rep",
+  "protection_attribute": "keep_hierarchy",
+  "checks": [
+    {"name": "demo", "top": "demo_top",
+     "sources": ["demo_design.v"],
+     "expect_instances": 3, "expect_ffs": 24}
+  ]
+}

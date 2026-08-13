@@ -99,8 +99,10 @@ requirements:
       replicas and voters intact; collapse shall fail the build.
     tests:
       - scripts/check_tmr.sh
+      - tmr-guard/tmr_guard.py
     evidence: ci.yaml tmr-guard job (replica and flop counts pinned in
-      both directions)
+      both directions; the product tool runs its flagship manifest and
+      the demo negative control on every push)
 
   - id: R11
     text: The computer's liveness and death shall be separable from

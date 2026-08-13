@@ -1,5 +1,5 @@
 {
-  "src_dir": "../src",
+  "src_dir": "../../src",
   "defines": ["ZIRH_SIM_ENV"],
   "replica_pattern": "zirh_tmr_ff",
   "protection_attribute": "keep_hierarchy",
