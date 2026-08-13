@@ -97,6 +97,8 @@ jobs:
         run: python3 scripts/trace_check.py
       - name: registered beam analysis selftest
         run: python3 scripts/beam_analysis.py --selftest
+      - name: compliance matrix in sync with requirements (D16)
+        run: python3 scripts/evidence_matrix.py --check
       - name: regmap sync gate
         run: python3 scripts/regmap_gen.py --check
       - name: bench-as-code selftest
