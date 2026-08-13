@@ -23,14 +23,57 @@ RAM with scrub-on-read, and proves its life every loop iteration with a
 rolling signature the telemetry carries. The bus watchdog guarantees a
 wedged peripheral costs an event, not the CPU.
 
+## Block diagram
+
+```
+                ui[3] UART_RX
+                     |
+  +-- clk_rst ---+   v
+  | POR, ticks,  |  +------------- SoC --- (watchdog resets ONLY this) --+
+  | HEARTBEAT ---|--| SERV RISC-V --ibus--> mask ROM (synthesized        |
+  +--------------+  |  (bit-serial)         constants, pipelined fetch)  |
+                    |      | dbus                                        |
+                    |  bus + timeout --> ECC RAM (SECDED)                |
+                    |      |         --> UART regs (commands, echo)      |
+                    +------|---------------------------------------------+
+                           | slot 3
+         +-----------------+------------------+
+         v                                    v
+  +-- housekeeping hk ------------------+  +-- interfaces ifc ------+
+  | PLAIN ring (N=32, the reference)    |  | CAN 2.0A-lite  uio[0:1]|
+  | TMR ring A: 3 hard macros pinned    |  | SpaceWire-lite uio[2:5]|
+  |   680-1380 um apart                 |  +------------------------+
+  | TMR ring B: identical, tool-placed  |
+  | RAW/ESC counters (all TMR),         |  +-- environment env -----+
+  | CPU signature, BOOT, watchdog       |  | ring-osc TID sensor    |
+  +----------------+-------------------++  | SET catcher chain      |
+                   |          reads/arms|  | burst correlator       |
+                   v                    +--+------------------------+
+  +-- telemetry tlm2 (frames: all counters, signature, checksum) --+
+  |     |                                                          |
+  |     +--> UART TX mux ------------------------> uo[4] UART_TX   |
+  |     +--> TLM_MIRROR (CPU-untouchable copy) --> uio[7]          |
+  +----------------------------------------------------------------+
+
+  diagnostics on uo[]: HEARTBEAT, CPU_ALIVE, SEU_EVT, ERR_TMR,
+  ECC_EVT, BUS_TIMEOUT, ARMED - instrument vs computer failure
+  visible on two LEDs with no software anywhere
+```
+
+The separation that matters: the watchdog reboots only the SoC, so the
+instruments and both telemetry voices count straight through a CPU
+death, and the BOOT field records it.
+
 ## Verified
 
-Eleven cocotb suites (integration through the TT harness at silicon
-parameters, gate-level in CI), ten synthesis integrity checks pinning
-every block's replica and flop counts in BOTH directions - TMR that
-must survive, and the ECC RAM's deliberate zero TMR. Hardened clean on
-the 8x2-class die with the bound macros: 81% utilization, setup
-+6.5 ns at the 50 MHz constraint (20 MHz nominal), hold +79 ps,
+Twenty-plus cocotb suites (integration through the TT harness at
+silicon parameters, marathon and fault campaigns, and a systematic
+gate-level SEU sweep - exhaustive singles plus the pair geometry that
+maps the escape window, re-proven in CI on every hardening run),
+synthesis integrity checks pinning every block's replica and flop
+counts in BOTH directions - TMR that must survive, and the ECC RAM's
+deliberate zero TMR. Hardened clean on the 8x2 die with the bound
+macros: 83% utilization, setup +22 ns, hold positive at every corner,
 DRC/LVS/antenna zero.
 
 ```sh
@@ -51,6 +94,10 @@ plumbing.
 - docs/SCOPE.md - the engineering record: every sizing decision with
   the measurement that forced it, including the 8x2 probe that failed
   at 86% density and the shrink that fixed it
+- docs/PREDICTION.md - the registered pre-beam prediction:
+  ESCAPE(A) vs ESCAPE(B) from the escape window and the layout,
+  frozen before any beam time
+- docs/PAPER.md - manuscript draft built around that prediction
 
 ## License
 
