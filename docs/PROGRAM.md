@@ -325,3 +325,49 @@ The GATEs (B10 shuttle submission, B7 beam money, C14 dedicated MPW,
 D16 pilot customer, D17 review partner) are decisions, not
 engineering; they are surfaced, costed where possible, and left to
 their owner.
+
+## Status ledger (closing the engineering register)
+
+Every autonomous item in the register is done; what remains is
+exactly the GATE list. The ledger, item by item, with the artifact
+that closed it:
+
+- A1-A4 memory foundation: src/zirh_sram39.v (macro binding, 5-slice
+  word, address-in-ECC, scrubber), formal/f_ecc + f_amask,
+  test/test_sram39.py
+- A5/F25/F26 boot and update: src/zirh_boot_ctrl.v + src/zirh_qspi.v,
+  docs/BOOT.md, ISP + A/B revert ladder proven in simulation
+- A6 SRAM DUT experiment: designed into the BIST engine
+  (src/zirh_sram_bist.v pattern modes) and the campaign plans
+- B7/B8/B9 campaign engineering: docs/BEAM-PLAN.md,
+  docs/TID-SEL-PLAN.md, docs/DUT-BOARD.md - every pre-application
+  box ticked; the applications themselves are the GATE
+- C11 standalone essentials: src/zirh_clkobs.v flying; pad
+  ring/ESD/POR named as the honest new-design list in
+  docs/ZIRH3-SCOPE.md
+- C12 core study: docs/CORE-STUDY.md (Hazard3 primary, picorv32
+  fallback, Ibex watch)
+- C13 characterization: docs/BENCH-PROCEDURE.md + host/shmoo_plan.csv;
+  silicon execution waits on B10
+- C14 cost study: docs/MPW-COST.md - the free IHP 2 mm2 open-source
+  slot found; the money GATE may cost nothing
+- D15 traceability: requirements.yaml + scripts/trace_check.py, and
+  the ECSS-shaped rendering scripts/evidence_matrix.py ->
+  docs/COMPLIANCE-MATRIX.md (which also closes D16's engineering
+  half; the pilot CUSTOMER remains the gate)
+- E18-E21 commercial assets: tmr-guard/ productization,
+  docs/IP-PORTFOLIO.md, docs/CANARY-IP.md, docs/TMRGUARD-PRODUCT.md,
+  docs/POSITIONING.md (E24)
+- E22 funding-channel memo: SKIPPED by owner instruction
+- E23 export control: docs/EXPORT-CONTROL.md
+- F27/F28 debug and DFT: src/zirh_dbg_gate.v + docs/DEBUG-DFT.md
+- G30-G38 test ladder: SDF corner flow (sdf.yaml + Makefile.sdf),
+  bench procedure, glitch + TPA designs
+  (docs/FAULT-INJECTION-PLAN.md), beam statistics and confound
+  protocol, reporting shape - all pre-facility engineering done
+- G39 orbit flight: GATE, with the CubeSat path noted
+- H40-H49 hygiene sprint: all ten items live in CI
+
+The register stays open only where a decision needs its owner:
+B10 (shuttle), B7 (beam money), C14 (MPW money - possibly zero),
+D16 (pilot customer), D17 (review partner), G39 (flight).
