@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" font-family="monospace">
+  <style>
+    .t  { font-size: 12px; fill: #222; }
+    .h  { font-size: 13px; font-weight: bold; fill: #111; }
+    .ok { font-size: 12px; fill: #0a6b1f; }
+    .bad{ font-size: 12px; fill: #a01212; }
+    .box{ fill: #f7f7f7; stroke: #444; stroke-width: 1; }
+    .ffs{ fill: #ffffff; stroke: #666; stroke-width: 0.8; }
+  </style>
+  <text x="360" y="20" text-anchor="middle" class="h">tmr-guard: the same netlist, before and after synthesis strips the TMR</text>
+
+  <!-- left panel: healthy -->
+  <rect x="20" y="40" width="330" height="235" class="box"/>
+  <text x="185" y="60" text-anchor="middle" class="h">netlist with (* keep_hierarchy *)</text>
+  <rect x="55"  y="80" width="70" height="45" class="ffs"/>
+  <rect x="150" y="80" width="70" height="45" class="ffs"/>
+  <rect x="245" y="80" width="70" height="45" class="ffs"/>
+  <text x="90"  y="107" text-anchor="middle" class="t">ff_a x8</text>
+  <text x="185" y="107" text-anchor="middle" class="t">ff_b x8</text>
+  <text x="280" y="107" text-anchor="middle" class="t">ff_c x8</text>
+  <path d="M90 125 L185 160 M185 125 L185 160 M280 125 L185 160" stroke="#666" fill="none"/>
+  <rect x="150" y="160" width="70" height="30" class="ffs"/>
+  <text x="185" y="180" text-anchor="middle" class="t">voter</text>
+  <text x="35" y="215" class="t">$ tmr_guard.py demo.tmr.json</text>
+  <text x="35" y="233" class="ok">  ok  demo  instances 3/3 ffs 24/24</text>
+  <text x="35" y="251" class="ok">tmr-guard: PASS</text>
+
+  <!-- right panel: collapsed -->
+  <rect x="370" y="40" width="330" height="235" class="box"/>
+  <text x="535" y="60" text-anchor="middle" class="h">same source, attributes stripped</text>
+  <rect x="500" y="80" width="70" height="45" class="ffs"/>
+  <text x="535" y="102" text-anchor="middle" class="t">ff x8</text>
+  <text x="535" y="118" text-anchor="middle" class="bad">(replicas merged)</text>
+  <path d="M535 125 L535 160" stroke="#666" fill="none"/>
+  <rect x="500" y="160" width="70" height="30" class="ffs"/>
+  <text x="535" y="180" text-anchor="middle" class="t">wire</text>
+  <text x="385" y="215" class="t">$ tmr_guard.py stripped.tmr.json</text>
+  <text x="385" y="233" class="bad">  FAIL  demo  instances 1/3 ffs 8/24</text>
+  <text x="385" y="251" class="bad">tmr-guard: FAIL (protection deleted)</text>
+
+  <text x="360" y="293" text-anchor="middle" class="t">Both netlists simulate identically and pass timing. Only the checker sees the difference.</text>
+</svg>

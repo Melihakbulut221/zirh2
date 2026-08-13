@@ -1,0 +1,12 @@
+[*] SEU into one replica: voter masks, mismatch pulses, computer never notices
+@28
+tt_um_hma_zirh2.clk
+@22
++{replica_A_hit} tt_um_hma_zirh2.u_hk.u_mode.u_ff_a.q_o[1:0]
++{replica_B} tt_um_hma_zirh2.u_hk.u_mode.u_ff_b.q_o[1:0]
++{replica_C} tt_um_hma_zirh2.u_hk.u_mode.u_ff_c.q_o[1:0]
++{voted_q} tt_um_hma_zirh2.u_hk.u_mode.q_o[1:0]
+@28
+tt_um_hma_zirh2.u_hk.err_infra_o
+@22
+tt_um_hma_zirh2.uo_out[7:0]
