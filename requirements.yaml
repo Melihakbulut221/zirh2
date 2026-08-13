@@ -291,3 +291,14 @@ requirements:
     evidence: fw.yaml HAL compile gate; ci.yaml regmap sync gate
       guarantees the addresses cannot drift from the RTL
 
+  - id: R28
+    text: The shipped netlist shall boot and speak at the spec clock
+      with the hardening run's own corner delays annotated - both
+      military-range extremes - and no unknown shall reach an output
+      pin after boot.
+    tests:
+      - test/test_sdf.py
+      - test/sdf_load.v
+    evidence: sdf.yaml three-corner matrix per hardening release;
+      the SDF-support micro-experiment recorded in ROADMAP Cycle 26
+
