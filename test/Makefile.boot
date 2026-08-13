@@ -11,6 +11,7 @@ COMPILE_ARGS += -I$(SRC_DIR)
 VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_lib.v
 VERILOG_SOURCES += $(SRAM_V)/RM_IHPSG13_1P_core_behavioral_bm_bist.v
 VERILOG_SOURCES += $(SRAM_V)/RM_IHPSG13_1P_1024x8_c2_bm_bist.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_sram_bist.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_sram39.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_boot_ctrl.v
 VERILOG_SOURCES += $(PWD)/tb_boot.v

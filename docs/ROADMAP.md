@@ -246,3 +246,22 @@ strap wiggling and upsets notwithstanding - and the cover shows the
 bench path exists. Brief v2 is registered verbatim in PROGRAM.md:
 the MRAM SiP architecture with capacity floors, the G test ladder
 (30-39) and the H repo-hygiene contract (40-49) are now the queue.
+
+## Cycle 15 (2026-08-14): the march/BIST engine - one block, three
+## customers
+
+zirh_sram_bist drives the A_BIST port set the RM_IHPSG13 macros ship
+with (the functional port is muxed away by construction, so BIST is
+exclusive without any glue): MARCH C- over all five slices in
+parallel for production screening and commanded flight self-test, and
+checkerboard fill + read-only scan as the A6 beam pattern-scan front
+end. The scan REPORTS and never repairs - a repair would erase the
+event the beam experiment exists to count - and the suite proves
+exactly that: a disturbed row is detected at the right address with
+the right slice map, a second scan still sees it, and a subsequent
+march rescreens the array clean. All engine state is TMR with the
+trap landing on IDLE (a mangled test engine must never keep
+scribbling). The Cycle-12 lesson became structure on the way: the
+five slice instantiations are now ONE generate loop - identical
+wiring by construction, no fifth instance for a mechanical edit to
+miss.

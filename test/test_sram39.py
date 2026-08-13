@@ -31,7 +31,7 @@ async def bus(dut, adr, we=0, dat=0, sel=0xF, timeout=16):
 
 
 def slice_mem(dut, k):
-    m = [dut.u_m0, dut.u_m1, dut.u_m2, dut.u_m3, dut.u_m4][k]
+    m = dut._id(f"g_slice[{k}]", extended=False).u_m
     return m.u_macro.i_SRAM_1P_behavioral_bm_bist.memory
 
 
@@ -51,6 +51,8 @@ async def test_sram39_secded(dut):
     cocotb.start_soon(Clock(dut.clk, 40, unit="ns").start())
     dut.cyc_i.value = 0
     dut.scrub_en_i.value = 0
+    dut.bist_start_i.value = 0
+    dut.bist_mode_i.value = 0
     dut.rst_n.value = 0
     await ClockCycles(dut.clk, 4)
     dut.rst_n.value = 1

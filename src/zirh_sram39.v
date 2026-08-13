@@ -93,7 +93,20 @@ module zirh_sram39 #(
     output reg         evt_corr_o,
     output reg         evt_uncorr_o,
     output reg         evt_scrub_corr_o,  // background sweep repaired a word
-    output wire        err_o              // scrubber TMR mismatch
+    output wire        err_o,             // scrubber/bist TMR mismatch
+
+    // BIST control (docs/DEBUG-DFT.md: production screening, commanded
+    // flight self-test and the A6 beam pattern-scan share this engine).
+    // BIST is exclusive and destructive: quiesce the bus, expect the
+    // array reinitialized after. Bus accesses during BIST still ack
+    // (nothing hangs) but data is undefined.
+    input  wire        bist_start_i,
+    input  wire [1:0]  bist_mode_i,   // 0 march c-, 1 cb fill, 2 read-scan
+    output wire        bist_busy_o,
+    output wire        bist_pass_o,
+    output wire [15:0] bist_fail_cnt_o,
+    output wire [9:0]  bist_fail_adr_o,
+    output wire [4:0]  bist_fail_map_o
 
 `ifdef FORMAL
     // same contract as zirh_ecc_ram: fault XOR on the read view only
@@ -152,13 +165,29 @@ module zirh_sram39 #(
         .clk(clk), .rst_n(rst_n), .en_i(scrub_take),
         .d_i(sadr_q + 10'd1), .q_o(sadr_q), .err_o(sadr_err));
 
-    assign err_o = div_err | pend_err | sadr_err;
+    // --- BIST engine --------------------------------------------------------
+    wire bist_en, bist_men, bist_wen, bist_ren;
+    wire [9:0] bist_adr;
+    wire [7:0] bist_din;
+    wire bist_err;
+
+    zirh_sram_bist u_bist (
+        .clk(clk), .rst_n(rst_n),
+        .start_i(bist_start_i), .mode_i(bist_mode_i),
+        .q0_i(q0), .q1_i(q1), .q2_i(q2), .q3_i(q3), .q4_i(qflat[39:32]),
+        .bist_en_o(bist_en), .bist_men_o(bist_men),
+        .bist_wen_o(bist_wen), .bist_ren_o(bist_ren),
+        .bist_adr_o(bist_adr), .bist_din_o(bist_din),
+        .busy_o(bist_busy_o), .pass_o(bist_pass_o),
+        .fail_cnt_o(bist_fail_cnt_o), .fail_adr_o(bist_fail_adr_o),
+        .fail_map_o(bist_fail_map_o), .err_o(bist_err));
+
+    assign err_o = div_err | pend_err | sadr_err | bist_err;
 
     // --- the five slices ----------------------------------------------------
     // read data returns one cycle after ren; write is same-cycle
     wire [38:0] enc_wr;
     wire        wr_now;      // write strobe for all five macros
-    wire [7:0]  q0, q1, q2, q3, q4;
 
     // MEN held high: the enable is a power feature, not a correctness
     // one, and gating it bought the first build nothing but hazards
@@ -166,16 +195,29 @@ module zirh_sram39 #(
     wire ren = issue_rd | (state == S_SCRUB_RD);
     wire [9:0] row = (state != S_IDLE) ? row_q : widx;
 
-    zirh_sram39_slice u_m0 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
-                            .adr(row), .d(enc_wr[7:0]),   .q(q0));
-    zirh_sram39_slice u_m1 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
-                            .adr(row), .d(enc_wr[15:8]),  .q(q1));
-    zirh_sram39_slice u_m2 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
-                            .adr(row), .d(enc_wr[23:16]), .q(q2));
-    zirh_sram39_slice u_m3 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
-                            .adr(row), .d(enc_wr[31:24]), .q(q3));
-    zirh_sram39_slice u_m4 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
-                            .adr(row), .d({1'b0, enc_wr[38:32]}), .q(q4));
+    // the Cycle-12 lesson made structural: ONE generate loop, identical
+    // wiring by construction - a mechanical edit can no longer reach
+    // four slices and silently miss the fifth
+    wire [39:0] dflat = {1'b0, enc_wr[38:32], enc_wr[31:0]};
+    wire [39:0] qflat;
+
+    genvar g;
+    generate
+        for (g = 0; g < 5; g = g + 1) begin : g_slice
+            zirh_sram39_slice u_m (
+                .clk(clk), .men(men), .wen(wr_now), .ren(ren),
+                .adr(row), .d(dflat[8*g +: 8]), .q(qflat[8*g +: 8]),
+                .bist_en(bist_en), .bist_men(bist_men),
+                .bist_wen(bist_wen), .bist_ren(bist_ren),
+                .bist_adr(bist_adr), .bist_din(bist_din));
+        end
+    endgenerate
+
+    wire [7:0] q0 = qflat[7:0];
+    wire [7:0] q1 = qflat[15:8];
+    wire [7:0] q2 = qflat[23:16];
+    wire [7:0] q3 = qflat[31:24];
+    wire [7:0] q4 = qflat[39:32];
 
     // --- decode (valid in the cycle after issue_rd) -------------------------
     // address mask: 6 folded bits over the parity positions plus their
@@ -298,7 +340,7 @@ module zirh_sram39 #(
 
 endmodule
 
-// --- one slice: the PDK macro with BIST tied off -----------------------------
+// --- one slice: the PDK macro, BIST port wired to the march engine -----------
 module zirh_sram39_slice (
     input  wire       clk,
     input  wire       men,
@@ -306,7 +348,13 @@ module zirh_sram39_slice (
     input  wire       ren,
     input  wire [9:0] adr,
     input  wire [7:0] d,
-    output wire [7:0] q
+    output wire [7:0] q,
+    input  wire       bist_en,
+    input  wire       bist_men,
+    input  wire       bist_wen,
+    input  wire       bist_ren,
+    input  wire [9:0] bist_adr,
+    input  wire [7:0] bist_din
 );
 
     RM_IHPSG13_1P_1024x8_c2_bm_bist u_macro (
@@ -319,14 +367,14 @@ module zirh_sram39_slice (
         .A_DLY       (1'b0),
         .A_DOUT      (q),
         .A_BM        (8'hFF),
-        .A_BIST_CLK  (1'b0),
-        .A_BIST_EN   (1'b0),
-        .A_BIST_MEN  (1'b0),
-        .A_BIST_WEN  (1'b0),
-        .A_BIST_REN  (1'b0),
-        .A_BIST_ADDR (10'd0),
-        .A_BIST_DIN  (8'd0),
-        .A_BIST_BM   (8'd0)
+        .A_BIST_CLK  (clk),
+        .A_BIST_EN   (bist_en),
+        .A_BIST_MEN  (bist_men),
+        .A_BIST_WEN  (bist_wen),
+        .A_BIST_REN  (bist_ren),
+        .A_BIST_ADDR (bist_adr),
+        .A_BIST_DIN  (bist_din),
+        .A_BIST_BM   (8'hFF)
     );
 
 endmodule

@@ -38,7 +38,10 @@ module tb_boot (
         .cyc_i(cyc), .adr_i(adr), .dat_i(dat), .sel_i(4'hF),
         .we_i(we), .rdt_o(rdt), .ack_o(ack),
         .evt_corr_o(), .evt_uncorr_o(), .evt_scrub_corr_o(),
-        .err_o(sram_err));
+        .err_o(sram_err),
+        .bist_start_i(1'b0), .bist_mode_i(2'd0),
+        .bist_busy_o(), .bist_pass_o(), .bist_fail_cnt_o(),
+        .bist_fail_adr_o(), .bist_fail_map_o());
 
     wire _unused = &{sram_err, 1'b0};
 endmodule
