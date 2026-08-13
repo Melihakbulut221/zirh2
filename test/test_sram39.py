@@ -65,26 +65,8 @@ async def test_sram39_secded(dut):
     for a in range(1024):
         words[a] = random.getrandbits(32)
         await bus(dut, a << 2, we=1, dat=words[a])
-    for a in (0, 1, 2):
-        rdt, corr, unc = await bus(dut, a << 2)
-        dut._log.info(f"PRE-EN row{a}: corr={corr} unc={unc} "
-                      f"ok={rdt == words[a]}")
     dut.scrub_en_i.value = 1   # boot init done - release the sweep
 
-    async def wr_spy():
-        while True:
-            await RisingEdge(dut.clk)
-            await ReadOnly()
-            w = dut.wr_now.value
-            if str(w) == '1':
-                st = int(dut.state.value)
-                if st != 0:   # RMW/scrub-path writes only (full writes ok)
-                    dut._log.info(
-                        f"WSPY state={st} row={int(dut.row.value)} "
-                        f"hc={dut.had_corr.value} unc={dut.uncorr.value} "
-                        f"syn={dut.syn.value} cyc={dut.cyc_i.value} "
-                        f"we={dut.we_i.value}")
-    cocotb.start_soon(wr_spy())
     for a, w in words.items():
         rdt, corr, unc = await bus(dut, a << 2)
         assert rdt == w and corr == 0 and unc == 0, f"roundtrip a={a}"

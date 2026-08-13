@@ -175,7 +175,7 @@ module zirh_sram39 #(
     zirh_sram39_slice u_m3 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
                             .adr(row), .d(enc_wr[31:24]), .q(q3));
     zirh_sram39_slice u_m4 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
-                            .adr(widx), .d({1'b0, enc_wr[38:32]}), .q(q4));
+                            .adr(row), .d({1'b0, enc_wr[38:32]}), .q(q4));
 
     // --- decode (valid in the cycle after issue_rd) -------------------------
     // address mask: 6 folded bits over the parity positions plus their

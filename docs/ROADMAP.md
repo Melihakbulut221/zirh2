@@ -175,3 +175,35 @@ Three legs, all green, all rootless:
    cores); OpenTitan's flow was evaluated and skipped as
    infrastructure-bound. GTKWave runs rootless from an extracted deb
    with Xvfb for headless rendering.
+
+## Cycle 12 (2026-08-14): the memory workstream lands - scrubber,
+## address mask, and the ghost that taught the slicing discipline
+
+zirh_sram39 now carries the full A3/A4 stack, green on the 1024-word
+suite: registered-decision background scrubber (a divider-paced sweep
+through the same read-correct-writeback path, TMR counter and address
+walk, scrub_en gate for the boot-init window), and the address-in-ECC
+mask (even-weight fold of the row over the parity positions and the
+overall bit). Two formal results anchor it: the SECDED contract
+re-proven over the shared include after the refactor, and a new proof
+that a wrong-row read - every single-bit address flip - decodes
+UNCORRECTABLE for all 2^32 words and all row pairs with differing
+folds: wrong-row data can never come back "clean" or "corrected".
+
+The build fought two real bugs worth recording. First, the original
+scrubber muxed the macro address combinationally between the bus and
+the scrub counter; a bus request landing inside a scrub cycle steered
+repair writes to the wrong row. Fix: every macro control signal now
+derives from registered state. Second, a mechanical edit that
+switched the slices' address port from the bus index to the arbitrated
+row matched four instances and silently missed the fifth (its
+destructured port list differed by one character), leaving the parity
+slice on the live bus address: bus reads stayed accidentally coherent
+while every scrub beat read parity garbage, "repaired" phantom errors
+and slowly shredded the array. The hunt closed by reading the phantom
+syndrome sequence as a chain - each beat's parity byte was exactly
+the previous repair's write-through - which pointed at the one
+instance whose address had never moved. The lesson is now discipline:
+slice instantiations are generate-loops or nothing, and every
+mechanical multi-site edit gets a grep count against the expected
+site count before it gets a simulation.

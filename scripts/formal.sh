@@ -47,6 +47,7 @@ done
 
 echo "=== ECC RAM: SECDED contract (BMC, exhaustive over words/faults) ==="
 $YOSYS -q -p "
+  verilog_defaults -add -Isrc
   read_verilog -sv -formal -DFORMAL src/zirh_tmr_lib.v src/zirh_ecc_ram.v formal/f_ecc.sv
   prep -top f_ecc
   write_smt2 formal/out/ecc.smt2"
@@ -54,4 +55,15 @@ $SMTBMC -s z3 --presat -t 12 formal/out/ecc.smt2
 echo "    PROVEN: roundtrip, 1-bit correction (all 39 positions),"
 echo "            2-bit detection, corrected merge on partial writes"
 
-echo "formal: all ring widths proven, ECC contract proven, witnesses dumped"
+echo "=== address-in-ECC mask: wrong-row is always uncorrectable ==="
+$YOSYS -q -p "
+  verilog_defaults -add -Isrc
+  read_verilog -sv -formal -DFORMAL src/zirh_tmr_lib.v formal/f_amask.sv
+  prep -top f_amask
+  write_smt2 formal/out/amask.smt2"
+$SMTBMC -s z3 --presat -t 4 formal/out/amask.smt2
+echo "    PROVEN: matching fold decodes clean and exact; any fold"
+echo "            difference - every single-bit address flip - lands"
+echo "            UNCORRECTABLE, never clean, never miscorrected"
+
+echo "formal: rings, ECC contract and address mask proven, witnesses dumped"
