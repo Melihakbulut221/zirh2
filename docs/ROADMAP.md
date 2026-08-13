@@ -454,7 +454,7 @@ engagements as first revenue, the standalone split when an external
 user exists and not before - and leaves outreach, licensing and the
 split decision at the owner's gate where they belong.
 
-## Cycle 26 (2026-08-15): corner timing and X-propagation, in flight
+## Cycle 26 (2026-08-15): corner timing and X-propagation, closed green
 
 G30's flow is built: the shipped netlist simulates with the hardening
 run's OWN SDF at the three characterized corners including both
@@ -469,8 +469,20 @@ triples, so the flow is sound; the lesson (an annotator that returns
 success is not an annotator that annotated - verify with a delay you
 can see) is now recorded. sdf.yaml runs the three-corner matrix on
 demand per hardening release, staging netlist and SDF from the SAME
-named run, never mixed. The slow-corner local run is in flight; its
-verdict lands in this entry's follow-up.
+named run, never mixed.
+
+FOLLOW-UP, all three corners run locally to completion: slow
+(nom_slow, 1.08 V, 125 C - the binding setup corner), typical
+(nom_typ, 1.20 V, 25 C) and fast (nom_fast, 1.32 V, -40 C - the
+hold-risk extreme) each boot the shipped netlist at its own real
+delays, produce a valid telemetry frame from a living CPU, and
+finish with ZERO unknowns reaching any output pin after the monitor
+arms. TESTS=1 PASS=1 at every corner. The pre-silicon timing gap
+G30 named is closed: the netlist keeps its word across the full
+military range in both directions, and the X-propagation monitor -
+the part a pure STA report cannot give - confirms no un-initialized
+state ever leaks to a pin. The same three-corner matrix stays
+repeatable against any future hardening release via sdf.yaml.
 
 ## Cycle 27 (2026-08-15): the software ecosystem's first stone
 
