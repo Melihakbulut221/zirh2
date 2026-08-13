@@ -60,69 +60,10 @@ module zirh_ecc_ram (
 );
 
     // ------------------------------------------------------------------------
-    // Hamming SECDED helpers. Codeword positions 1..38: parity at the powers
-    // of two (1,2,4,8,16,32), data scattered over the rest, overall parity
-    // stored separately as bit [38] of the 39-bit memory word (codeword is
-    // kept in [37:0] as positions 1..38).
+    // Hamming SECDED helpers - shared include (zirh_secded.vh): the SRAM
+    // wrapper stores the same codeword; the formal proof guards the file.
     // ------------------------------------------------------------------------
-
-    function [38:1] place_data;
-        input [31:0] d;
-        integer pos, k;
-        begin
-            place_data = 38'b0;
-            k = 0;
-            for (pos = 1; pos <= 38; pos = pos + 1)
-                if (pos != 1 && pos != 2 && pos != 4 &&
-                    pos != 8 && pos != 16 && pos != 32) begin
-                    place_data[pos] = d[k];
-                    k = k + 1;
-                end
-        end
-    endfunction
-
-    function [37:0] gather_data_ext;   // returns {6'b0, data[31:0]} packing
-        input [38:1] cw;
-        integer pos, k;
-        reg [31:0] d;
-        begin
-            d = 32'b0;
-            k = 0;
-            for (pos = 1; pos <= 38; pos = pos + 1)
-                if (pos != 1 && pos != 2 && pos != 4 &&
-                    pos != 8 && pos != 16 && pos != 32) begin
-                    d[k] = cw[pos];
-                    k = k + 1;
-                end
-            gather_data_ext = {6'b0, d};
-        end
-    endfunction
-
-    function [5:0] syndrome_of;
-        input [38:1] cw;
-        integer pos, i;
-        begin
-            syndrome_of = 6'b0;
-            for (i = 0; i < 6; i = i + 1)
-                for (pos = 1; pos <= 38; pos = pos + 1)
-                    if (((pos >> i) & 1) == 1)
-                        syndrome_of[i] = syndrome_of[i] ^ cw[pos];
-        end
-    endfunction
-
-    function [38:0] encode;
-        input [31:0] d;
-        reg [38:1] cw;
-        reg [5:0]  syn;
-        integer i;
-        begin
-            cw  = place_data(d);
-            syn = syndrome_of(cw);      // parity slots are 0: syn = parities
-            for (i = 0; i < 6; i = i + 1)
-                cw[(1 << i)] = syn[i];
-            encode = {^cw, cw};         // [38] overall parity, [37:0] cw
-        end
-    endfunction
+    `include "zirh_secded.vh"
 
     // ------------------------------------------------------------------------
     // Storage
