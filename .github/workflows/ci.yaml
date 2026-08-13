@@ -82,6 +82,14 @@ jobs:
       - name: bare macro smoke
         run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.sram
 
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: requirements traceability gate
+        run: python3 scripts/trace_check.py
+
   tmr-guard:
     runs-on: ubuntu-24.04
     timeout-minutes: 20

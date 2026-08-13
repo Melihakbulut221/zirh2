@@ -1,0 +1,206 @@
+# =============================================================================
+# ZIRH - requirements traceability as code (PROGRAM.md H49, D15 applied)
+#
+# requirement -> tests (files that verify it) -> evidence (where the
+# proof runs and lands). scripts/trace_check.py enforces the chain in
+# CI: a requirement whose test files do not exist fails the build; the
+# check also reports test modules no requirement claims, so the map
+# and the repo cannot drift apart silently. The ECSS/DO-254-shaped
+# matrix is generated FROM this file, never written by hand.
+# =============================================================================
+
+requirements:
+
+  - id: R1
+    text: A single upset in any one TMR replica shall never reach a
+      voted output, in any cycle, at silicon timings.
+    tests:
+      - formal/f_ring.sv
+      - test/test_gl_seu_sweep.py
+    evidence: formal.yaml formal job (BMC + k-induction, N=4/8/32);
+      gds.yaml gl_test (384 exhaustive singles on the shipped netlist)
+
+  - id: R2
+    text: An escape shall require the same bit upset in two replicas
+      within one clock cycle, and no other fault geometry.
+    tests:
+      - formal/f_ring.sv
+      - test/test_gl_seu_sweep.py
+    evidence: formal cover witness (docs/fig/escape_witness.png);
+      pair geometry sweep in gl_test; registered in docs/PREDICTION.md
+
+  - id: R3
+    text: The SECDED memory shall correct every single stored-bit
+      error at all 39 positions, detect every double, and never
+      launder a corrupted byte through a partial write.
+    tests:
+      - formal/f_ecc.sv
+      - test/test_sram39.py
+    evidence: formal.yaml (exhaustive BMC over words, faults, initial
+      states); ci.yaml units job on the macro-backed storage
+
+  - id: R4
+    text: A wrong-row read - any single-bit address corruption at the
+      memory boundary - shall decode as uncorrectable, never as clean
+      or corrected data.
+    tests:
+      - formal/f_amask.sv
+      - test/test_sram39.py
+    evidence: formal.yaml (all words x all fold-distinct row pairs);
+      wrong-row detection case in the sram39 suite
+
+  - id: R5
+    text: The background scrubber shall repair a corrupted word no
+      firmware access ever touches, within one sweep period, without
+      disturbing bus traffic or any other word.
+    tests:
+      - test/test_sram39.py
+    evidence: ci.yaml units job (scrubber heal case; micro-interleave
+      behaviour proven during the Cycle-12 ghost hunt)
+
+  - id: R6
+    text: An interrupted or corrupted firmware load shall never
+      produce a bootable-looking bank; the no-brick property shall be
+      structural, not procedural.
+    tests:
+      - test/test_boot.py
+    evidence: ci.yaml units job (half-load and bad-CRC cases; valid
+      flag flips only on stored-image read-back CRC)
+
+  - id: R7
+    text: A firmware that fails to sign on shall be reverted
+      automatically - other valid bank first, golden ROM last - with
+      no ground contact.
+    tests:
+      - test/test_boot.py
+    evidence: ci.yaml units job (watchdog revert ladder case)
+
+  - id: R8
+    text: The debug domain shall be lockable for flight such that no
+      debug-side activity or upset reaches the core or the bus, and
+      the lock verdict shall be immutable after reset sampling.
+    tests:
+      - formal/f_dbg.sv
+      - test/test_dbg_gate.py
+    evidence: formal.yaml (inertness + absorbing-verdict induction);
+      ci.yaml units job (hammering, strap-wiggle, passthrough)
+
+  - id: R9
+    text: The SRAM march self-test shall detect a disturbed cell at
+      its exact address and slice, and the beam scan mode shall never
+      repair what it reports.
+    tests:
+      - test/test_bist.py
+    evidence: ci.yaml units job (march clean, disturb-detect-preserve,
+      rescreen clean)
+
+  - id: R10
+    text: Every TMR structure shall survive synthesis with its
+      replicas and voters intact; collapse shall fail the build.
+    tests:
+      - scripts/check_tmr.sh
+    evidence: ci.yaml tmr-guard job (replica and flop counts pinned in
+      both directions)
+
+  - id: R11
+    text: The computer's liveness and death shall be separable from
+      the instrument's at the pins, and a computer death shall never
+      stop the counters or the telemetry.
+    tests:
+      - test/test.py
+      - test/test_gl_campaign.py
+    evidence: test.yaml (frame/signature/watchdog cases); gds.yaml
+      gl_test campaign contract (SURVIVED/REBOOTED/ZOMBIE, silence
+      forbidden)
+
+  - id: R12
+    text: The processor integration - pipelined fetch, ROM data port,
+      bus, ECC RAM - shall execute random RV32I programs identically
+      to an independent golden model, judged at the UART pins.
+    tests:
+      - scripts/torture_gen.py
+      - scripts/torture.sh
+      - test/test_torture.py
+    evidence: formal.yaml torture job (30 programs, daily seed,
+      seed printed for replay; 100/100 on the recorded seeds)
+
+  - id: R13
+    text: The ZIRH-authored RTL shall lint clean under the armed
+      warning set; waivers shall be few and individually justified.
+    tests:
+      - scripts/lint.sh
+    evidence: ci.yaml lint job
+
+  - id: R14
+    text: The pre-beam prediction and its analysis shall be frozen in
+      the repository before any beam exposure; beam data shall be
+      compared against them unmodified.
+    tests:
+      - scripts/seu_predict.py
+    evidence: docs/PREDICTION.md (git history is the registration
+      timestamp); G48 registered-analysis scripts are the successor
+      item and extend this requirement to the full campaign
+
+  - id: R15
+    text: Every interface experiment - CAN, SpaceWire, RS-422 framing
+      and the CPU-untouchable telemetry mirror - shall meet its
+      protocol contract in loopback with its counters moving exactly
+      as commanded.
+    tests:
+      - test/test_can.py
+      - test/test_spw.py
+      - test/test_rs422.py
+      - test/test_mirror.py
+      - test/test_uart_regs.py
+    evidence: test.yaml unit runs (protocol FSMs, loopback, flood
+      atomicity)
+
+  - id: R16
+    text: The TMR register library shall heal any single-replica flip
+      through voted feedback and report the mismatch, for every
+      register width used on the die.
+    tests:
+      - test/test_tmr.py
+      - test/test_tmrflip.py
+    evidence: test.yaml unit runs (per-width flip sweeps, err pulse
+      checks)
+
+  - id: R17
+    text: Under sustained random stress - command fuzzing, flip
+      storms, marathon soak, reboot storms - the chip shall never go
+      permanently silent; every trial shall classify as SURVIVED,
+      REBOOTED or ZOMBIE, and the campaign library shall reproduce
+      the classification from recorded seeds.
+    tests:
+      - test/test_fuzz.py
+      - test/test_storm.py
+      - test/test_mega.py
+      - test/test_campaign.py
+    evidence: test.yaml marathon runs; host/zirh_campaign.py contract;
+      30-trial x 2-seed campaign records in docs/SCOPE.md
+
+  - id: R18
+    text: Every block shall hold its unit contract in isolation -
+      reset and clocking, bus slave protocol, ECC RAM semantics,
+      environment instruments, housekeeping counters and watchdog,
+      ROM ports, SoC integration, telemetry framing.
+    tests:
+      - test/test_clk_rst.py
+      - test/test_bus.py
+      - test/test_ecc_ram.py
+      - test/test_env.py
+      - test/test_hk.py
+      - test/test_rom.py
+      - test/test_soc.py
+      - test/test_tlm2.py
+      - test/test_z2.py
+    evidence: test.yaml and ci.yaml unit runs
+
+  - id: R19
+    text: The open-PDK SRAM macro behavioral model shall be bound and
+      exercised - write, synchronous read, bit-mask merge - before
+      any structure is built on it.
+    tests:
+      - test/test_sram_smoke.py
+    evidence: ci.yaml units job (bare macro smoke)
+

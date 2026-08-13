@@ -1,0 +1,15 @@
+# ZIRH - recorded torture seeds (PROGRAM.md H43)
+#
+# Replay any line with: make repro SEED=<seed> COUNT=<count>
+# The generator, the ISS and the RTL are deterministic: a recorded
+# seed reproduces the same programs, the same golden digests and the
+# same pin-level verdicts, bit for bit.
+#
+# seed   count  first run    result
+7        5      2026-08-13   5/5 at the pins (bring-up smoke)
+42       100    2026-08-13   100/100 (the first full batch)
+1907     16     2026-08-14   ghost-hunt corpus (sram39, Cycle 12)
+2027     -      2026-08-14   boot suite image corpus (test_boot.py)
+1453     -      2026-08-14   debug gate hammer corpus (test_dbg_gate.py)
+# CI runs a fresh daily seed (YYYYMMDD, printed in the formal.yaml
+# torture job log); any red day is replayed from that printed seed.

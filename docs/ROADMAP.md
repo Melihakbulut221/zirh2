@@ -282,3 +282,22 @@ reason in scripts/lint.sh; LATCH, WIDTHTRUNC and BLKANDNBLK stay
 armed. README wears the badges. Full container-image pinning is the
 registered follow-up; versions are pinned at pip/ciel level and
 echoed into every log today.
+
+## Cycle 17 (2026-08-14): traceability as code and the repro handle
+
+H49 and H43 land together because they are the same promise from two
+sides: every claim has a test, and every test replays. requirements
+.yaml maps nineteen requirements - from the escape-window theorem to
+the no-brick boot property to every historic unit suite - onto their
+thirty-eight test files and the CI jobs where the evidence runs;
+scripts/trace_check.py enforces the chain on every push (a
+requirement without an existing test fails the build, a test no
+requirement claims is reported before the map can drift). The gate's
+first run listed twenty-one orphan suites - the whole pre-program
+test family - and the map grew five requirements on the spot to claim
+them: the matrix now covers the repository, not just the new work.
+The root Makefile is the single entry point: units, lint, formal,
+tmr, trace, and make repro SEED=x, which replays any recorded torture
+seed to bit-identical verdicts; test/seeds.txt records every seed
+this project has used and what it proved. CI runs the same entry
+points; green here means green there.
