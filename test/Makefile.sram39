@@ -8,10 +8,13 @@ SIM_BUILD = sim_build/sram39
 
 COMPILE_ARGS += -DFUNCTIONAL
 COMPILE_ARGS += -I$(SRC_DIR)
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_lib.v
 VERILOG_SOURCES += $(SRAM_V)/RM_IHPSG13_1P_core_behavioral_bm_bist.v
 VERILOG_SOURCES += $(SRAM_V)/RM_IHPSG13_1P_1024x8_c2_bm_bist.v
 VERILOG_SOURCES += $(SRC_DIR)/zirh_sram39.v
 
+# fast scrub beat so the sweep completes inside simulation time
+COMPILE_ARGS += -Pzirh_sram39.SCRUB_DIV_LOG2=3
 TOPLEVEL = zirh_sram39
 COCOTB_TEST_MODULES = test_sram39
 

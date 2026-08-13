@@ -50,6 +50,7 @@ async def flip_stored_bit(dut, widx, bitpos):
 async def test_sram39_secded(dut):
     cocotb.start_soon(Clock(dut.clk, 40, unit="ns").start())
     dut.cyc_i.value = 0
+    dut.scrub_en_i.value = 0
     dut.rst_n.value = 0
     await ClockCycles(dut.clk, 4)
     dut.rst_n.value = 1
@@ -57,10 +58,33 @@ async def test_sram39_secded(dut):
 
     random.seed(1907)
 
-    # roundtrip across the depth
-    words = {a: random.getrandbits(32) for a in (0, 1, 17, 511, 1023)}
-    for a, w in words.items():
-        await bus(dut, a << 2, we=1, dat=w)
+    # boot discipline: zero-fill the whole array first (the background
+    # sweep decodes every row; uninitialized rows are X only in
+    # simulation, but the doctrine is real - firmware zero-fills at boot)
+    words = {}
+    for a in range(1024):
+        words[a] = random.getrandbits(32)
+        await bus(dut, a << 2, we=1, dat=words[a])
+    for a in (0, 1, 2):
+        rdt, corr, unc = await bus(dut, a << 2)
+        dut._log.info(f"PRE-EN row{a}: corr={corr} unc={unc} "
+                      f"ok={rdt == words[a]}")
+    dut.scrub_en_i.value = 1   # boot init done - release the sweep
+
+    async def wr_spy():
+        while True:
+            await RisingEdge(dut.clk)
+            await ReadOnly()
+            w = dut.wr_now.value
+            if str(w) == '1':
+                st = int(dut.state.value)
+                if st != 0:   # RMW/scrub-path writes only (full writes ok)
+                    dut._log.info(
+                        f"WSPY state={st} row={int(dut.row.value)} "
+                        f"hc={dut.had_corr.value} unc={dut.uncorr.value} "
+                        f"syn={dut.syn.value} cyc={dut.cyc_i.value} "
+                        f"we={dut.we_i.value}")
+    cocotb.start_soon(wr_spy())
     for a, w in words.items():
         rdt, corr, unc = await bus(dut, a << 2)
         assert rdt == w and corr == 0 and unc == 0, f"roundtrip a={a}"
@@ -91,5 +115,37 @@ async def test_sram39_secded(dut):
     exp = (words[1023] & 0xFFFFFF00) | 0xEE
     assert rdt == exp, f"merge under corruption: {rdt:#x} != {exp:#x}"
 
-    dut._log.info("sram39: roundtrip, per-slice correction, scrub, "
-                  "double-bit detection, corrupted-merge all good")
+    # background scrubber: corrupt a word firmware never reads, give the
+    # sweep one full pass of idle time, and the word must come back clean
+    # with the repair reported on the scrub counter, not the read counter
+    scrub_seen = [0]
+
+    async def scrub_watch():
+        while True:
+            await RisingEdge(dut.clk)
+            await ReadOnly()
+            if int(dut.evt_scrub_corr_o.value) == 1:
+                scrub_seen[0] += 1
+    cocotb.start_soon(scrub_watch())
+
+    await flip_stored_bit(dut, 0, 5)
+    await ClockCycles(dut.clk, 8 * 1024 + 200)   # one full sweep at DIV=8
+    assert scrub_seen[0] >= 1, "the sweep never repaired anything"
+    rdt, corr, unc = await bus(dut, 0 << 2)
+    assert rdt == words[0] and corr == 0, (
+        f"scrubber left the word dirty: corr={corr}")
+
+    # address-in-ECC: move a stored word to the wrong row (the write-path
+    # address SET) - the read must flag UNCORRECTABLE, never clean data
+    src_w, dst_w = 17, 18
+    for k in range(5):
+        mem = slice_mem(dut, k)
+        mem[dst_w].value = int(mem[src_w].value)
+    await NextTimeStep()
+    rdt, corr, unc = await bus(dut, dst_w << 2)
+    assert unc == 1 and corr == 0, (
+        f"wrong-row data not flagged: corr={corr} unc={unc}")
+
+    dut._log.info("sram39: roundtrip, per-slice correction, scrub-on-read, "
+                  "double-bit detection, corrupted-merge, background "
+                  "scrubber heal, wrong-row detection all good")

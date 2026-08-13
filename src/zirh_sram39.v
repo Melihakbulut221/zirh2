@@ -35,15 +35,51 @@
 // decode is USED (reads, RMW merges) - full writes over garbage are
 // not phantom corrections.
 //
+// BACKGROUND SCRUBBER (PROGRAM.md A3). Scrub-on-read is not enough:
+// a word firmware never reads accumulates errors until two independent
+// upsets meet in it and the loss is uncorrectable. A TMR'd background
+// FSM walks the whole address space at a fixed rate through the same
+// read-correct-writeback path, stealing only bus-idle cycles - a bus
+// transaction is never delayed by more than the one in-flight scrub
+// beat. Sizing: with per-word upset rate r and full-sweep period T_s,
+// the probability a second upset lands in an already-hit word before
+// the sweep returns is ~ r x T_s per word; for the datasheet,
+// P(uncorrectable)/word/sweep ~ (r x T_s)^2 / 2. SCRUB_DIV_LOG2 sets
+// one scrub beat every 2^N cycles: at 20 MHz and N=10 the 1024-word
+// sweep completes in ~54 ms, five orders under any credible orbital
+// upset interval.
+//
+// ADDRESS-IN-ECC (PROGRAM.md A4). SECDED protects data; a SET on the
+// address path writes correct-looking data to the WRONG word - the
+// silent memory counterpart of the ZOMBIE class. The write path XORs
+// an address-derived mask over the parity positions and the overall
+// bit; the read path XORs the same mask back. Matching addresses
+// cancel exactly; ANY single-bit address difference between the row
+// that was written and the row that is read yields a nonzero syndrome
+// with a CLEAN overall bit - the uncorrectable signature, by
+// construction (the mask carries even weight: 6 folded parity bits
+// plus their own parity in the overall position). The protection
+// boundary is the module port: corruption upstream of the port
+// changes mask and row together and is bus-level work, stated
+// honestly here.
+//
 // The BIST port set is tied off here; production test wiring is the
 // DFT workstream (PROGRAM.md F28), not a bring-up concern.
 // =============================================================================
 
 `default_nettype none
 
-module zirh_sram39 (
+module zirh_sram39 #(
+    parameter integer SCRUB_DIV_LOG2 = 10   // one scrub beat / 2^N cycles
+) (
     input  wire        clk,
     input  wire        rst_n,
+
+    // scrub gate: hold low until boot initialization has written every
+    // word (the sweep decodes rows; sweeping preinitialization garbage
+    // is pointless, and in simulation it is X). Integration wires this
+    // to a control register.
+    input  wire        scrub_en_i,
 
     // bus slave: words 0..1023 at adr[11:2]
     input  wire        cyc_i,
@@ -55,7 +91,9 @@ module zirh_sram39 (
     output wire        ack_o,
 
     output reg         evt_corr_o,
-    output reg         evt_uncorr_o
+    output reg         evt_uncorr_o,
+    output reg         evt_scrub_corr_o,  // background sweep repaired a word
+    output wire        err_o              // scrubber TMR mismatch
 
 `ifdef FORMAL
     // same contract as zirh_ecc_ram: fault XOR on the read view only
@@ -66,9 +104,13 @@ module zirh_sram39 (
     `include "zirh_secded.vh"
 
     // --- transaction FSM ----------------------------------------------------
-    localparam S_IDLE = 1'b0, S_RD = 1'b1;
+    localparam [1:0] S_IDLE = 2'd0, S_RD = 2'd1,
+                 S_SCRUB_RD = 2'd2, S_SCRUB_FIX = 2'd3;
 
-    reg state;
+    reg [1:0] state;
+    // the row a read was ISSUED to - decode and writeback must use the
+    // captured row, not a bus address that may have moved on
+    reg  [9:0] row_q;
     wire [9:0] widx = adr_i[11:2];
 
     wire full_wr = &sel_i;
@@ -80,31 +122,84 @@ module zirh_sram39 (
                    & (~we_i | (we_i & ~full_wr));
     wire decode_cy = (state == S_RD);
 
+    // --- background scrubber ------------------------------------------------
+    // divider ticks a pending flag; the FSM consumes it on a bus-idle
+    // cycle. Counter and address walk in TMR registers: an upset in the
+    // scrubber must not become a scribble engine.
+    wire [SCRUB_DIV_LOG2-1:0] div_q;
+    wire div_err;
+    zirh_tmr_reg #(.WIDTH(SCRUB_DIV_LOG2)) u_sdiv (
+        .clk(clk), .rst_n(rst_n), .en_i(1'b1),
+        .d_i(div_q + {{(SCRUB_DIV_LOG2-1){1'b0}}, 1'b1}),
+        .q_o(div_q), .err_o(div_err));
+    wire scrub_tick = (div_q == {SCRUB_DIV_LOG2{1'b1}});
+
+    // the scrub DECISION is taken at a clock edge and everything the
+    // macros see afterwards derives from registered state - the first
+    // build muxed the macro address combinationally between the bus
+    // and the scrub counter, and a bus request landing inside a scrub
+    // cycle steered the repair write to the wrong row (caught in
+    // simulation as silent corruption of freshly written words)
+    wire pend_q, pend_err;
+    wire scrub_take = (state == S_IDLE) & ~cyc_i & pend_q & scrub_en_i;
+    zirh_tmr_reg #(.WIDTH(1)) u_pend (
+        .clk(clk), .rst_n(rst_n), .en_i(scrub_tick | scrub_take),
+        .d_i(scrub_tick), .q_o(pend_q), .err_o(pend_err));
+
+    wire [9:0] sadr_q;
+    wire sadr_err;
+    zirh_tmr_reg #(.WIDTH(10)) u_sadr (
+        .clk(clk), .rst_n(rst_n), .en_i(scrub_take),
+        .d_i(sadr_q + 10'd1), .q_o(sadr_q), .err_o(sadr_err));
+
+    assign err_o = div_err | pend_err | sadr_err;
+
     // --- the five slices ----------------------------------------------------
     // read data returns one cycle after ren; write is same-cycle
     wire [38:0] enc_wr;
     wire        wr_now;      // write strobe for all five macros
     wire [7:0]  q0, q1, q2, q3, q4;
 
-    wire men = cyc_i | (state != S_IDLE);
-    wire ren = issue_rd;
+    // MEN held high: the enable is a power feature, not a correctness
+    // one, and gating it bought the first build nothing but hazards
+    wire men = 1'b1;
+    wire ren = issue_rd | (state == S_SCRUB_RD);
+    wire [9:0] row = (state != S_IDLE) ? row_q : widx;
 
     zirh_sram39_slice u_m0 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
-                            .adr(widx), .d(enc_wr[7:0]),   .q(q0));
+                            .adr(row), .d(enc_wr[7:0]),   .q(q0));
     zirh_sram39_slice u_m1 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
-                            .adr(widx), .d(enc_wr[15:8]),  .q(q1));
+                            .adr(row), .d(enc_wr[15:8]),  .q(q1));
     zirh_sram39_slice u_m2 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
-                            .adr(widx), .d(enc_wr[23:16]), .q(q2));
+                            .adr(row), .d(enc_wr[23:16]), .q(q2));
     zirh_sram39_slice u_m3 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
-                            .adr(widx), .d(enc_wr[31:24]), .q(q3));
+                            .adr(row), .d(enc_wr[31:24]), .q(q3));
     zirh_sram39_slice u_m4 (.clk(clk), .men(men), .wen(wr_now), .ren(ren),
                             .adr(widx), .d({1'b0, enc_wr[38:32]}), .q(q4));
 
     // --- decode (valid in the cycle after issue_rd) -------------------------
+    // address mask: 6 folded bits over the parity positions plus their
+    // parity in the overall bit - even weight, so an address mismatch
+    // always decodes as UNCORRECTABLE, never as a clean or correctable
+    // word (see header)
+    function [38:0] amask;
+        input [9:0] a;
+        reg [5:0] p6;
+        integer i;
+        begin
+            p6 = a[5:0] ^ {2'b00, a[9:6]};
+            amask = 39'd0;
+            for (i = 0; i < 6; i = i + 1)
+                amask[(1 << i) - 1] = p6[i];
+            amask[38] = ^p6;
+        end
+    endfunction
+
 `ifdef FORMAL
-    wire [38:0] raw = {q4[6:0], q3, q2, q1, q0} ^ f_corrupt_i;
+    wire [38:0] raw = ({q4[6:0], q3, q2, q1, q0} ^ amask(row_q))
+                      ^ f_corrupt_i;
 `else
-    wire [38:0] raw = {q4[6:0], q3, q2, q1, q0};
+    wire [38:0] raw = {q4[6:0], q3, q2, q1, q0} ^ amask(row_q);
 `endif
     wire [38:1] cw_raw  = raw[37:0];
     wire [5:0]  syn     = syndrome_of(cw_raw);
@@ -139,10 +234,13 @@ module zirh_sram39 (
     wire wr_rmw   = decode_cy & we_i;
     wire wr_scrub = decode_cy & ~we_i & had_corr;
 
-    assign wr_now = wr_full | wr_rmw | wr_scrub;
-    assign enc_wr = wr_full ? encode(dat_i)
-                  : wr_rmw  ? encode(merged)
-                  :           fixed;
+    wire sweep_fix = (state == S_SCRUB_FIX) & had_corr;
+
+    assign wr_now = wr_full | wr_rmw | wr_scrub | sweep_fix;
+    assign enc_wr = (wr_full ? encode(dat_i)
+                  :  wr_rmw  ? encode(merged)
+                  :            fixed)
+                  ^ amask(wr_full ? widx : row_q);
 
     // --- FSM + registered outputs ------------------------------------------
     reg [31:0] rdt_q;
@@ -150,18 +248,27 @@ module zirh_sram39 (
 
     always @(posedge clk) begin
         if (!rst_n) begin
-            state        <= S_IDLE;
-            ack_q        <= 1'b0;
-            evt_corr_o   <= 1'b0;
-            evt_uncorr_o <= 1'b0;
+            state            <= S_IDLE;
+            row_q            <= 10'd0;
+            ack_q            <= 1'b0;
+            evt_corr_o       <= 1'b0;
+            evt_uncorr_o     <= 1'b0;
+            evt_scrub_corr_o <= 1'b0;
         end else begin
-            ack_q        <= 1'b0;
-            evt_corr_o   <= 1'b0;
-            evt_uncorr_o <= 1'b0;
+            ack_q            <= 1'b0;
+            evt_corr_o       <= 1'b0;
+            evt_uncorr_o     <= 1'b0;
+            evt_scrub_corr_o <= 1'b0;
             case (state)
                 S_IDLE: begin
                     if (wr_full)       ack_q <= 1'b1;
-                    else if (issue_rd) state <= S_RD;
+                    else if (issue_rd) begin
+                        row_q <= widx;
+                        state <= S_RD;
+                    end else if (scrub_take) begin
+                        row_q <= sadr_q;
+                        state <= S_SCRUB_RD;
+                    end
                 end
                 S_RD: begin
                     // decode cycle: data + ack for reads and RMWs; the
@@ -173,7 +280,15 @@ module zirh_sram39 (
                     evt_uncorr_o <= uncorr;
                     state        <= S_IDLE;
                 end
-                default: state <= S_IDLE;
+                S_SCRUB_RD: state <= S_SCRUB_FIX;   // read in flight
+                S_SCRUB_FIX: begin
+                    // repair (if any) strobes this cycle at row_q;
+                    // no ack, the bus never sees the beat
+                    evt_scrub_corr_o <= had_corr;
+                    evt_uncorr_o     <= uncorr;
+                    state            <= S_IDLE;
+                end
+                default: state <= S_IDLE;   // safe-state trap
             endcase
         end
     end
