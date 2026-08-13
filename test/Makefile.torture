@@ -1,0 +1,38 @@
+# ZIRH-2 - torture harness (scripts/torture.sh drives this)
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRC_DIR = $(PWD)/../src
+
+SIM_BUILD = sim_build/torture
+
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_lib.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_aligner.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_alu.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_bufreg.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_bufreg2.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_compdec.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_csr.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_ctrl.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_decode.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_immdec.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_mem_if.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_rf_if.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_rf_ram.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_rf_ram_if.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_rf_top.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_state.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_synth_wrapper.v
+VERILOG_SOURCES += $(SRC_DIR)/serv/serv_top.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_rom.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_bus.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_ecc_ram.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_rs422.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_uart_regs.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_soc.v
+VERILOG_SOURCES += $(PWD)/tb_torture.v
+
+COMPILE_ARGS += -I$(SRC_DIR)
+TOPLEVEL = tb_torture
+COCOTB_TEST_MODULES = test_torture
+
+include $(shell cocotb-config --makefiles)/Makefile.sim

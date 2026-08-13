@@ -138,3 +138,30 @@ the fpga workflow is removed; the SYNTH/TWIN guards stay dormant in
 the RTL. Beam rehearsal is the gate-level campaign, which the SEU
 sweep proves on every hardening run.
 
+## Cycle 11 (2026-08-13): the verification deepening
+
+Three legs, all green, all rootless:
+
+1. FORMAL. The escape-window theorem is proven, not sampled:
+   formal/f_ring.sv + scripts/formal.sh (yosys-smtbmc, z3, BMC plus
+   unbounded k-induction at N = 4, 8 and the shipping 32) - under an
+   arbitrary infinite upset stream confined to one replica per cycle,
+   the voted output equals the golden ring in every bit of every
+   cycle. The dual cover property makes the solver construct the
+   escape itself; its GTKWave render is docs/fig/escape_witness.png
+   and Fig. 1 of the manuscript.
+
+2. TORTURE. scripts/torture_gen.py + scripts/torture.sh: random RV32I
+   programs sized for the 256-word ROM (ALU, shifts, forward skips,
+   ECC-RAM loads/stores) against an independent golden model, digest
+   judged at the UART pins through the exact integration we modified
+   by hand - the pipelined fetch, the ROM dbus port, the bus mux, the
+   ECC RAM. 100/100 programs match. Debugging the harness caught a
+   generator bug (the digest chain xor-ing through its own
+   accumulator), not an RTL bug - the RTL survived its accuser.
+
+3. The methodology borrows the riscv-dv/core-v-verif idea without
+   their UVM machinery (tied to commercial simulators and other
+   cores); OpenTitan's flow was evaluated and skipped as
+   infrastructure-bound. GTKWave runs rootless from an extracted deb
+   with Xvfb for headless rendering.
