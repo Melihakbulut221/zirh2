@@ -48,6 +48,15 @@ module zirh_ecc_ram (
     // ECC observability, for the housekeeping counters / telemetry
     output reg         evt_corr_o,    // 1-cycle: a word was repaired
     output reg         evt_uncorr_o   // 1-cycle: uncorrectable word touched
+
+`ifdef FORMAL
+    // Formal-only fault port: XORed into the read view of the stored
+    // word so the solver can corrupt any stored bit(s). Never defined
+    // in any synthesis or simulation flow - zero silicon, zero sim
+    // divergence; exists so formal/f_ecc.sv can prove SECDED against
+    // the shipped decode instead of a copy of it.
+    , input wire [38:0] f_corrupt_i
+`endif
 );
 
     // ------------------------------------------------------------------------
@@ -125,7 +134,11 @@ module zirh_ecc_ram (
     // ------------------------------------------------------------------------
     // Decode + correct the addressed word (combinational)
     // ------------------------------------------------------------------------
+`ifdef FORMAL
+    wire [38:0] raw     = mem[idx] ^ f_corrupt_i;
+`else
     wire [38:0] raw     = mem[idx];
+`endif
     wire [38:1] cw_raw  = raw[37:0];
     wire [5:0]  syn     = syndrome_of(cw_raw);
     wire        ovr_bad = (^cw_raw) ^ raw[38];

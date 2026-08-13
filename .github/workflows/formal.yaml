@@ -1,0 +1,56 @@
+# =============================================================================
+# ZIRH-2 - formal proofs + RV32I torture on every push
+#
+# Two independent legs, both minutes not hours:
+#   formal  - the escape-window theorem (BMC + k-induction, N=4/8/32),
+#             the escape witness covers, and the ECC SECDED contract
+#   torture - 30 random RV32I programs against the golden model at the
+#             UART pins (fresh seed per calendar day, so the corpus
+#             grows across the project's life while any failure stays
+#             reproducible from the printed seed)
+# =============================================================================
+
+name: formal
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  formal:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v6
+
+      - name: install yosys + z3
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y yosys z3
+
+      - name: prove the escape window and the ECC contract
+        run: bash scripts/formal.sh
+
+      - name: keep the escape witnesses
+        uses: actions/upload-artifact@v4
+        with:
+          name: formal_witnesses
+          path: formal/out/escape_n*.vcd
+
+  torture:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v6
+
+      - name: install iverilog + cocotb
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y iverilog
+          pip install -r test/requirements.txt
+
+      - name: run 30 random programs vs the golden model
+        run: |
+          SEED=$(date -u +%Y%m%d)
+          echo "torture seed: $SEED"
+          bash scripts/torture.sh 30 $SEED

@@ -160,7 +160,17 @@ Three legs, all green, all rootless:
    generator bug (the digest chain xor-ing through its own
    accumulator), not an RTL bug - the RTL survived its accuser.
 
-3. The methodology borrows the riscv-dv/core-v-verif idea without
+3. ECC SECDED, proven. formal/f_ecc.sv against the shipped encode and
+   decode (a FORMAL-only fault port XORs the read view; zero silicon):
+   roundtrip, single-bit correction at every one of the 39 stored
+   positions, two-bit detection with an empty miscorrection space, and
+   the read-correct-merge-reencode partial-write path never laundering
+   a corrupted byte - exhaustive over all words, faults and initial
+   states, 39 seconds of z3. A deliberately mutated decode fails the
+   proof immediately, so it has teeth. Both formal legs and a 30-
+   program daily-seed torture now run on every push (formal.yaml).
+
+4. The methodology borrows the riscv-dv/core-v-verif idea without
    their UVM machinery (tied to commercial simulators and other
    cores); OpenTitan's flow was evaluated and skipped as
    infrastructure-bound. GTKWave runs rootless from an extracted deb

@@ -45,4 +45,13 @@ for N in $NS; do
   echo "    WITNESS at N=$N: formal/out/escape_n$N.vcd"
 done
 
-echo "formal: all ring widths proven, witnesses dumped"
+echo "=== ECC RAM: SECDED contract (BMC, exhaustive over words/faults) ==="
+$YOSYS -q -p "
+  read_verilog -sv -formal -DFORMAL src/zirh_tmr_lib.v src/zirh_ecc_ram.v formal/f_ecc.sv
+  prep -top f_ecc
+  write_smt2 formal/out/ecc.smt2"
+$SMTBMC -s z3 --presat -t 12 formal/out/ecc.smt2
+echo "    PROVEN: roundtrip, 1-bit correction (all 39 positions),"
+echo "            2-bit detection, corrected merge on partial writes"
+
+echo "formal: all ring widths proven, ECC contract proven, witnesses dumped"
