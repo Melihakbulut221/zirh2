@@ -104,6 +104,29 @@ plumbing.
   frozen before any beam time
 - docs/PAPER.md - manuscript draft built around that prediction
 
+### The product program (docs/PROGRAM.md is the index)
+
+The experiment chip is closed; docs/ROADMAP.md logs the product
+program that followed. Design docs, each with its RTL or scripts:
+
+- docs/PROGRAM.md - the obstacle register and the workstream plan
+- docs/BOOT.md, docs/DEBUG-DFT.md, docs/ZIRH3-SCOPE.md - the
+  dedicated-chip architecture: boot-from-MRAM, debug isolation and
+  DFT, and the data-gated integration scope
+- docs/BEAM-PLAN.md, docs/TID-SEL-PLAN.md, docs/DUT-BOARD.md,
+  docs/FAULT-INJECTION-PLAN.md, docs/BENCH-PROCEDURE.md - the test
+  ladder from bench glitching and laser TPA to the beam campaign,
+  finished before any facility application
+- docs/CORE-STUDY.md, docs/MPW-COST.md, docs/EXPORT-CONTROL.md - the
+  product-chip decisions: core selection, the free-silicon path, and
+  the export-control research memo
+- docs/IP-PORTFOLIO.md, docs/CANARY-IP.md, docs/TMRGUARD-PRODUCT.md,
+  docs/POSITIONING.md - what this program sells before any silicon:
+  the IP catalogue, the drop-in radiation canary, tmr-guard as a
+  product, and the open-evidence positioning
+- docs/COMPLIANCE-MATRIX.md - the ECSS-shaped requirement/evidence
+  matrix, generated from requirements.yaml and diffed in CI
+
 ## License
 
 Apache-2.0. SERV is vendored unmodified from
