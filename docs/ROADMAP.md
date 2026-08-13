@@ -364,3 +364,24 @@ la-x0 idiom, solved by patching the PREPROCESSED text with an
 equal-size x0-write pair so layout and semantics both hold. The
 toolchain is the same pinned xpack gcc the firmware builds with;
 arch.yaml runs the suite in CI on every push.
+
+## Cycle 21 (2026-08-15): the campaign paperwork, finished before the
+## application
+
+docs/BEAM-PLAN.md executes the brief's rule that campaign design
+finishes before any facility application: protons first (TAEK/SANAEM
+Ankara flagged as the local option to investigate), neutrons for
+cheap statistics, heavy ions for the LET curve with decapsulation
+budgeted; the statistics designed up front (30-50 events per chain,
+flux capped at one event per readout window, the console re-planning
+from the first measured hour); the TT-harness confound protocol
+registered in writing with its control run, attribution rules and
+recovery ladder; ESCC 25100/JESD57 reporting shape; and the honest
+checklist showing exactly which boxes are engineering (done) and
+which are the owner's gates (silicon, money, the DUT board build).
+docs/TID-SEL-PLAN.md does the same for the other two campaigns: the
+TM1019-shaped stepped-dose flow that also calibrates the on-chip RO
+dosimeter into an absolute instrument, and the worst-case SEL
+experiment with its current-signature machinery - sequenced so TID
+runs first on cheaper irradiator time and SEL rides the ion shift's
+final hot run.
