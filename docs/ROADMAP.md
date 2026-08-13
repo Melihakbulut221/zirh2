@@ -129,3 +129,12 @@ Also closed on the way: twin-lite (4612/5280 LC, 87%, bitstream green),
 the twin ROM ack-timing bug, and the local GL recipe hardened against
 reboots (TT iverilog v13 permanent in ~/.local/opt - vanilla v12 reads
 the whole die X, the day's most expensive lesson).
+
+## Decision (2026-08-13): FPGA twin program retired
+
+The open twin-board question is resolved: no board. The UP5K fit
+history and the lite configuration stay documented in fpga/README.md;
+the fpga workflow is removed; the SYNTH/TWIN guards stay dormant in
+the RTL. Beam rehearsal is the gate-level campaign, which the SEU
+sweep proves on every hardening run.
+

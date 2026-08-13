@@ -1,4 +1,16 @@
-# ZIRH-2 FPGA twin (iCE40UP5K)
+# ZIRH-2 FPGA twin (RETIRED)
+
+DECISION (2026-08-13): the FPGA twin program is closed. The UP5K does
+not fit the full design, the lite configuration was built and proven
+(4612/5280 LCs, 87%, bitstream green in CI) but no board will be
+deployed; beam rehearsal runs on the gate-level simulation and the
+campaign library instead, which the systematic SEU sweep already
+exercises end to end on the shipped netlist. The record below is kept
+because the work it documents produced two things that outlive the
+program: the ROM ack-timing bug (found by the twin build, fixed for
+any future FPGA target) and the ZIRH_TWIN_LITE / ZIRH_TWIN_FULL
+guards, which stay dormant in the RTL - they cost the ASIC nothing
+and any future board revival starts from a proven configuration.
 
 The twin exists to answer two questions no simulation can, and to
 rehearse an entire beam campaign at zero dollars per hour before the
