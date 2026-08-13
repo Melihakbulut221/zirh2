@@ -19,14 +19,20 @@ on:
 jobs:
   formal:
     runs-on: ubuntu-24.04
+    # a solver stall must fail fast, not hold a runner to the 6 h limit
+    timeout-minutes: 45
     steps:
       - name: checkout repo
         uses: actions/checkout@v6
 
       - name: install yosys + z3
+        # z3 comes from pip, NOT apt: the distro solver is generations
+        # old and crawled the N=32 induction into the 6-hour job limit
+        # (measured); the pip build proves it in minutes
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y yosys z3
+          sudo apt-get install -y yosys
+          pip install z3-solver
 
       - name: prove the escape window and the ECC contract
         run: bash scripts/formal.sh
@@ -39,6 +45,7 @@ jobs:
 
   torture:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - name: checkout repo
         uses: actions/checkout@v6
