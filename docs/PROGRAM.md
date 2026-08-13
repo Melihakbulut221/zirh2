@@ -72,10 +72,39 @@ research and proceeds autonomously.
   computation - an address SET writes the right data to the wrong
   word today and no counter sees it (the memory counterpart of the
   ZOMBIE class).
-- A5. The updatability story: mask ROM becomes a trusted bootloader
-  (the ROM checksum mechanism is its embryo); firmware loads from
-  external rad-tolerant MRAM into SRAM under ECC + signature check,
-  falling back to the golden ROM copy on failure.
+- A5. MRAM as part of the product (persistent-memory architecture).
+  The constraint and the answer: SG13G2 has no on-chip flash/EEPROM/
+  eMRAM and cannot grow one (eMRAM is a 22/28 nm commercial-process
+  feature); flash cells are MORE radiation-soft than SRAM, which is
+  why most rad-hard MCUs boot from external NVM anyway. MRAM is
+  inherently SEU-immune with effectively unlimited write endurance -
+  the right persistent technology. Three-stage plan:
+  - Product architecture (SiP/MCM): MCU die + space-grade MRAM die in
+    one hermetic package - the customer sees a single part, a
+    rad-tolerant MCU WITH MRAM. Supply chain exists: Frontgrade/
+    Cobham 16 Mb-class space MRAM, Avalanche/Everspin STT-MRAM up to
+    Gb class. Needs known-good-die supply and MCM package
+    qualification.
+  - Capacity target (never below the competition): minimum 2x 16 Mb
+    (A/B banks, 4 MB total), RECOMMENDED 2x 64-128 Mb (16-32 MB
+    total). Reference points: SAMRH71 and GR716 carry no embedded
+    flash and lean on external boot memory; typical cubesat OBCs use
+    8-32 MB NOR - 16-32 MB of MRAM holds both firmware A/B banks and
+    data/log space in one NVM, and births the positioning "we put in
+    the package what the competition leaves outside".
+  - Chip-side support: QSPI-MRAM controller (TMR), per-sector CRC +
+    signature, the boot ROM's golden-copy fallback (docs/BOOT.md,
+    built and proven in simulation). The MRAM cell is immune but the
+    controller and the interface are not - the protection boundary is
+    drawn there. The experiment chip (ZIRH-3) rehearses the same
+    architecture with a discrete MRAM device on the board; SiP
+    integration is the dedicated-product step. Long-term watch: IHP's
+    embedded-RRAM research and 22 nm eMRAM foundries, noted as a
+    separate cost class.
+  Capacity targets for the SRAM side (from the same brief): the
+  experiment chip carries sliced 8-32 KB (enough to prove slicing +
+  scrubber); the product chip at least 128 KB, preferably 256 KB+ -
+  competitor class, dedicated design only.
 - A6. SRAM DUT experiment: raw SEU/MBU cross-section of the bare
   open-PDK macro - pattern-scan FSM, static and dynamic modes, raw
   address logging for MBU correlation. No published beam data exists
@@ -165,6 +194,101 @@ research and proceeds autonomously.
   examples, a dev board; later an RTOS port. Half of what the
   competition actually sells is this ecosystem.
 
+
+
+### G. The broad test strategy (a ladder from cheap to expensive)
+
+- G30. Close the pre-silicon gaps: code/functional coverage metrics,
+  SDF-annotated GL timing simulation at the corner libraries,
+  X-propagation analysis (post-reset undefined state against the TMR
+  voters).
+- G31. Bench characterization: current baseline, then reset/UART/ROM
+  checksum, then block-by-block functional test, then a frequency x
+  voltage shmoo (operating envelope and margin), then a temperature
+  sweep, then a days-to-weeks uninterrupted soak measuring the
+  FALSE-POSITIVE floor - "21 days, zero events" is the reliability
+  certificate of every beam counter.
+- G32. Radiation-free fault injection: clock/voltage glitching
+  (ChipWhisperer class) to fire the detect-recover machine (watchdog,
+  safe-state traps, signature telemetry) on silicon; validates the GL
+  campaign's SURVIVED/REBOOTED/ZOMBIE classification on the real
+  chip.
+- G33. Laser TPA mapping: two-photon pulsed laser, backside,
+  node-by-node charge injection; images the placement-A/B hypothesis
+  physically before any beam. Cheaper than beam, repeatable;
+  precondition is backside access.
+- G34. Beam ordering - protons first: protons pass through packaging
+  (no decap; PSI/KVI/TRIUMF; the Ankara TAEK/SANAEM 30 MeV proton
+  accelerator to be investigated as the local option), neutrons
+  (ChipIr) accumulate cheap statistics, heavy ions (UCL HIF/RADEF/
+  GANIL) are the source of the cross-section-vs-LET curve but REQUIRE
+  decapsulation (ion range is tens of um; a QFN lid is opaque) - go
+  with multiple DUTs. At least 4-5 LET points, Weibull fit,
+  CREME96/OMERE orbit-rate calculation for LEO/GEO.
+- G35. TID as its own campaign: Co-60, TM1019/ESCC 22900 flow -
+  stepped dose, parametrics at each step, RO-dosimeter calibration
+  against a reference, anneal. SEL testing at worst case: hot, Vmax,
+  fast current interruption.
+- G36. Manage the TT-harness confound: the beam spot is cm-scale, the
+  tile is 0.14 mm^2 - the unprotected TT mux/harness gets hit too,
+  and a harness SEFI can be misattributed as a ZOMBIE. Control run
+  (beam on, tile deselected: measure and subtract the harness's own
+  SEFI rate), power-cycle recovery procedure, and a written
+  attribution protocol registered in advance, PREDICTION.md style.
+- G37. Design the statistics up front: target >=30-50 events per
+  chain for the ESCAPE(A)/ESCAPE(B) separation (Poisson: ~25 events
+  is ~20% relative error), back-compute fluence and beam hours; cap
+  flux at <=1 event per readout window (burst-correlator pile-up
+  separation); the analysis scripts live in the repo BEFORE the beam
+  (registered prediction, registered analysis).
+- G38. Report against standards: ESCC 25100 / JESD57 for SEE,
+  MIL-STD-883 TM1019 for TID - the shapes the industry can read.
+- G39. The final test - orbit: fly the TT carrier as a cubesat
+  payload (the Turkish cubesat ecosystem / TUBITAK UZAY channel);
+  beam data corroborated by orbit data closes the commercial
+  narrative and writes the first line of flight heritage.
+
+### H. Repo hygiene: the test/code assets that must exist
+
+- H40. Waveform policy: raw VCD/FST dumps are never committed (CI
+  artifacts / release attachments / git-lfs instead). What DOES go
+  in: .gtkw save files per testbench (the where-to-look knowledge,
+  codified), annotated PNG/SVGs of the critical moments in docs/fig/
+  (SEU masked by the voter with the signature intact; uncorrectable
+  to safe-state trap; tmr-guard before/after), and a few hundred KB
+  of curated mini-dumps holding only the evidence slices.
+- H41. The CI line (the biggest gap): every commit runs lint
+  (verilator/verible), all cocotb suites, formal, tmr-guard, README
+  badge; pinned container so the same result reproduces years later.
+  In a one-person project CI is the first answer to the
+  "self-verifying single person" objection.
+- H42. Coverage report: line/branch plus functional coverage (at
+  least one injection per voter, every FSM transition seen); HTML
+  report published from CI. The first metric ECSS/DO-254 language
+  asks for.
+- H43. Reproducibility: torture seeds recorded in files, make repro
+  SEED=x reruns identically; the whole flow including GL netlist
+  generation reruns from scripts at pinned versions.
+- H44. Embedded assertion library: voter integrity, FSM one-hot, ECC
+  invariants as SVA next to the RTL; simulation and formal consume
+  the same property files (the property is the single source).
+- H45. Bench tests as code, before silicon: UART smoke, shmoo
+  automation, soak logger, telemetry parsers in the repo NOW, tested
+  against the simulated UART today - silicon day becomes pressing a
+  key.
+- H46. ISA compliance: riscv-arch-test/RISCOF run against the
+  TMR-wrapped, memory-mapped integration ("I did not break the core"
+  evidence).
+- H47. Machine-readable register map: YAML/SystemRDL single source;
+  documentation and access tests generated from it (against the
+  silent PINMAP/RTL divergence failure).
+- H48. Registered beam analysis: Poisson comparison, Weibull fit,
+  harness-confound subtraction scripts frozen in the repo before the
+  beam; when data arrives the scripts run untouched.
+- H49. Requirements traceability as code: requirements.yaml
+  (requirement -> test -> evidence artifact); CI warns on
+  "requirement without a test". Item D15, implemented.
+
 ## Execution order (autonomous unless GATEd)
 
 Phase P1 - memory foundation: A1 macro bring-up (simulation binding
@@ -173,8 +297,21 @@ address-in-ECC, A3 scrubber FSM; each verified with the house
 discipline (cocotb suites, formal where it bites, tmr-guard gates).
 
 Phase P2 - programmability core: A5/F25 bootloader architecture and
-RTL, F26 update protocol, F27 debug-module integration study, F28
-DFT plan.
+RTL (DONE: docs/BOOT.md + zirh_boot_ctrl), F26 update protocol
+(DONE: ISP + revert ladder proven), F27 debug-module integration
+study, F28 DFT plan, A5 QSPI-MRAM controller.
+
+Phase P2b - repo hygiene sprint (H): CI line with lint and coverage
+(H41, H42), waveform policy and figures (H40), reproducibility
+harness (H43), assertion library consolidation (H44), bench tests as
+code (H45), ISA compliance run (H46), register map as data (H47),
+registered beam analysis (H48), requirements.yaml (H49).
+
+Phase P3b - test-strategy paperwork from G: the beam plan (G34, G36,
+G37, G38), TID/SEL campaign plans (G35), TPA and glitching designs
+(G32, G33), bench characterization procedures (G31), pre-silicon gap
+closure (G30). GATE(money/decision): actual campaigns, orbit flight
+(G39).
 
 Phase P3 - characterization paperwork that needs no silicon: B7 beam
 campaign plan, B8 SEL experiment design, B9 TID test plan, C11
