@@ -488,3 +488,20 @@ The fw workflow gates the compile on every push. Toolchain, linker
 scripts, HAL, example: four of the brief's five ecosystem items in
 the repository; the dev board rides with the DUT board, and the RTOS
 port stays queued for the product core.
+
+## Cycle 28 (2026-08-15): three studies, one program-shaping finding
+
+Three decision-support documents land, and the middle one moves a
+program assumption. docs/CORE-STUDY.md picks the product core by hard
+criteria (Hazard3 primary, picorv32 fallback, Ibex watched) with the
+numbers to be re-measured on our own flow. docs/EXPORT-CONTROL.md is
+the counsel memo: the Wassenaar/EAR rad-hard thresholds, the argument
+that a measured rad-TOLERANT part sits below them, and the finding
+that this program's measure-before-believing habit is accidentally an
+export-compliance posture. And docs/MPW-COST.md turned up the
+surprise: IHP grants roughly two square millimetres of FREE SG13G2
+silicon to open-source, DRC-clean, open-tool submissions - which is
+this repository exactly - so the ZIRH-3 dedicated-design rehearsal
+(pad ring, guard rings, POR, SRAM macros, the whole obstacle-2 list)
+waits behind the data-discipline gate, not the money gate. The
+sellable part keeps its paid EUROPRACTICE path clean.
