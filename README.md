@@ -2,6 +2,11 @@
 
 **Radiation-Tolerant Experiment Chip 2: a computer under the beam**
 
+![ci](https://github.com/Melihakbulut221/zirh2/actions/workflows/ci.yaml/badge.svg)
+![test](https://github.com/Melihakbulut221/zirh2/actions/workflows/test.yaml/badge.svg)
+![formal](https://github.com/Melihakbulut221/zirh2/actions/workflows/formal.yaml/badge.svg)
+![gds](https://github.com/Melihakbulut221/zirh2/actions/workflows/gds.yaml/badge.svg)
+
 > Successor to [ZIRH-1](https://github.com/Melihakbulut221/zirh). Where
 > ZIRH-1 measures what radiation does to storage, ZIRH-2 measures
 > whether a hardened computing element keeps executing - and which of

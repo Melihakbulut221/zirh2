@@ -273,16 +273,18 @@ module zirh_spw #(
                     if (tx_nbits == ((tx_sel == 2'd3) ? 4'd10 : 4'd4)) begin
                         // parity bit: odd over prev payload + this p + flag
                         b = ~(tx_par ^ ((tx_sel == 2'd3) ? 1'b0 : 1'b1));
-                        tx_par = 1'b0;
+                        tx_par <= 1'b0;
                     end else if (tx_nbits == ((tx_sel == 2'd3) ? 4'd9 : 4'd3)) begin
                         b = (tx_sel == 2'd3) ? 1'b0 : 1'b1;   // flag
                     end else begin
                         // payload: data LSB first / ctl bits MSB first
                         if (tx_sel == 2'd3)
-                            b = tx_char_q[4'd8 - tx_nbits];
+                            // LSB-first payload: index 8-nbits, taken
+                            // mod 8 (nbits=8 maps to 0) - 3-bit clean
+                            b = tx_char_q[3'd7 - tx_nbits[2:0] + 3'd1];
                         else
                             b = tx_shift[tx_nbits - 4'd1];
-                        tx_par = tx_par ^ b;
+                        tx_par <= tx_par ^ b;
                     end
                     // DS encode: strobe toggles when data does not change
                     if (b == dout_o) sout_o <= ~sout_o;

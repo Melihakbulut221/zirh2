@@ -113,11 +113,15 @@ endmodule
     // cocotb: the level-sensitive catch latch, so the unit suite can
     // exercise the arm / hold / re-arm semantics the silicon latch has
     wire chain_out = test_i;
+    // the latch is the POINT of this model (the silicon catch latch's
+    // arm/hold/re-arm semantics); linted intentionally
+    /* verilator lint_off LATCH */
     reg q;
     always @* begin
         if (!arm_n_i)       q = 1'b0;
         else if (chain_out) q = 1'b1;
     end
+    /* verilator lint_on LATCH */
     assign caught_o = q;
 `else
     localparam integer STAGES = 64;   // even: output follows the input
@@ -161,7 +165,8 @@ module zirh_env #(
 );
 
     localparam integer WW = WIN_LOG2 + 1;
-    localparam [WW-1:0] WIN_LOAD = (1 << WIN_LOG2) + SETTLE;
+    localparam integer  WIN_LOAD_I = (1 << WIN_LOG2) + SETTLE;
+    localparam [WW-1:0] WIN_LOAD   = WIN_LOAD_I[WW-1:0];
 
     // --- oscillator window ---------------------------------------------------
     wire [WW-1:0] win_q;

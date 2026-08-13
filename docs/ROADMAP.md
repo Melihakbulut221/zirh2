@@ -265,3 +265,20 @@ scribbling). The Cycle-12 lesson became structure on the way: the
 five slice instantiations are now ONE generate loop - identical
 wiring by construction, no fifth instance for a mechanical edit to
 miss.
+
+## Cycle 16 (2026-08-14): the CI line closes the biggest gap
+
+H41 said it plainly: in a one-person project, CI is the first answer
+to the self-verifying-single-person objection. ci.yaml now runs on
+every push what previously ran only on this bench: the verilator lint
+gate (which caught a REAL mixed blocking/nonblocking assignment in
+the SpaceWire encoder's parity register on its very first pass - the
+gate justified itself before it was even committed), all six unit
+suites (housekeeping, SECDED SRAM, boot controller, BIST engine,
+debug gate, bare macro smoke) against the ciel-pinned PDK, and the
+tmr-guard synthesis-integrity check that proves the optimizer did not
+silently collapse the TMR. Waivers are few and each carries its
+reason in scripts/lint.sh; LATCH, WIDTHTRUNC and BLKANDNBLK stay
+armed. README wears the badges. Full container-image pinning is the
+registered follow-up; versions are pinned at pip/ciel level and
+echoed into every log today.

@@ -101,7 +101,8 @@ module zirh_hk #(
 
     localparam integer INJ_POS = N / 2;
     localparam integer WW = $clog2(N + 5);
-    localparam [WW-1:0] WARM_LOAD = N + 4;
+    localparam integer  WARM_LOAD_I = N + 4;
+    localparam [WW-1:0] WARM_LOAD   = WARM_LOAD_I[WW-1:0];
 
     // --- bus decode ---------------------------------------------------------
     wire [3:0] reg_sel = adr_i[5:2];

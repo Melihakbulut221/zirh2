@@ -1,0 +1,96 @@
+# =============================================================================
+# ZIRH - the CI line (PROGRAM.md H41, "the biggest gap")
+#
+# Every push: lint -> every unit suite -> tmr-guard. The RTL
+# integration suite runs in test.yaml (TT harness), formal proofs and
+# torture in formal.yaml, hardening + GL in gds.yaml - this workflow
+# adds the gates nothing else ran: the linter that caught a real
+# mixed-assignment bug on its first pass, the unit suites for the
+# product-program blocks (SECDED SRAM, boot controller, BIST engine,
+# debug gate, housekeeping), and the synthesis-integrity check that
+# proves the TMR survives the optimizer - previously local-only, which
+# is exactly the "self-verifying single person" objection.
+#
+# Pinning: pip versions from test/requirements.txt, the IHP PDK by
+# ciel hash below, apt tools by the ubuntu-24.04 snapshot. Full
+# container-image pinning is the H41 follow-up once the tool set
+# stabilizes; versions are echoed into the log for the record.
+# =============================================================================
+
+name: ci
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  IHP_PDK_PIN: 22f2a25f1734796de3debbbf29cf697cbbc54081
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: install verilator
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y verilator
+          verilator --version
+      - name: cache the IHP PDK
+        uses: actions/cache@v4
+        with:
+          path: ~/.ciel
+          key: ciel-ihp-${{ env.IHP_PDK_PIN }}
+      - name: install the pinned PDK (SRAM models)
+        run: |
+          pip install ciel
+          ciel enable --pdk-family ihp-sg13g2 $IHP_PDK_PIN
+      - name: lint the ZIRH-authored RTL
+        run: PDK_ROOT=$HOME/.ciel bash scripts/lint.sh
+
+  units:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: install iverilog + cocotb
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y iverilog
+          pip install -r test/requirements.txt
+          iverilog -V | head -1
+      - name: cache the IHP PDK
+        uses: actions/cache@v4
+        with:
+          path: ~/.ciel
+          key: ciel-ihp-${{ env.IHP_PDK_PIN }}
+      - name: install the pinned PDK (SRAM models)
+        run: |
+          pip install ciel
+          ciel enable --pdk-family ihp-sg13g2 $IHP_PDK_PIN
+      - name: housekeeping unit suite
+        run: make -C test -B -f Makefile.hk
+      - name: SECDED SRAM suite (slicing, scrubber, address mask)
+        run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.sram39
+      - name: boot controller suite (banks, ISP, revert ladder)
+        run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.boot
+      - name: BIST engine suite (march, fill, beam scan)
+        run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.bist
+      - name: debug gate suite (flight lock)
+        run: make -C test -B -f Makefile.dbg
+      - name: bare macro smoke
+        run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.sram
+
+  tmr-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: install yosys
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y yosys
+          yosys -V
+      - name: synthesis integrity - the TMR survives the optimizer
+        run: bash scripts/check_tmr.sh
