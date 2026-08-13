@@ -1,0 +1,21 @@
+[*] ZIRH sram39 - scrub beat and SECDED decode, the signals that matter
+[dumpfile] (null)
+@28
+zirh_sram39.clk
+zirh_sram39.cyc_i
+zirh_sram39.ack_o
+zirh_sram39.state[1:0]
+@22
+zirh_sram39.adr_i[31:0]
+zirh_sram39.row[9:0]
+zirh_sram39.raw[38:0]
+zirh_sram39.syn[5:0]
+@28
+zirh_sram39.had_corr
+zirh_sram39.uncorr
+zirh_sram39.evt_corr_o
+zirh_sram39.evt_uncorr_o
+zirh_sram39.evt_scrub_corr_o
+zirh_sram39.wr_now
+@22
+zirh_sram39.sadr_q[9:0]

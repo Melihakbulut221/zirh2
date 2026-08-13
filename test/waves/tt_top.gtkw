@@ -1,0 +1,14 @@
+[*] ZIRH-2 top - the two-LED failure separation and the event pins
+[dumpfile] (null)
+@28
+tb.clk
+tb.rst_n
+tb.uo_out[0]
+tb.uo_out[1]
+tb.uo_out[2]
+tb.uo_out[3]
+tb.uo_out[4]
+tb.uo_out[7]
+@22
+tb.ui_in[7:0]
+tb.uio_out[7:0]

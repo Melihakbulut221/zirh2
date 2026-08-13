@@ -89,6 +89,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: requirements traceability gate
         run: python3 scripts/trace_check.py
+      - name: registered beam analysis selftest
+        run: python3 scripts/beam_analysis.py --selftest
 
   tmr-guard:
     runs-on: ubuntu-24.04

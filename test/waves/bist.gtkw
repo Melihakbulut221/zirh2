@@ -1,0 +1,15 @@
+[*] ZIRH march/BIST engine - element walk, compare, fail latch
+[dumpfile] (null)
+@28
+zirh_sram39.clk
+zirh_sram39.bist_start_i
+zirh_sram39.bist_busy_o
+zirh_sram39.bist_pass_o
+@22
+zirh_sram39.u_bist.st_q[2:0]
+zirh_sram39.u_bist.el_q[2:0]
+zirh_sram39.u_bist.ad_q[9:0]
+zirh_sram39.u_bist.miss[4:0]
+zirh_sram39.bist_fail_cnt_o[15:0]
+zirh_sram39.bist_fail_adr_o[9:0]
+zirh_sram39.bist_fail_map_o[4:0]

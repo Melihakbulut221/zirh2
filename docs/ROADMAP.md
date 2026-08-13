@@ -301,3 +301,23 @@ tmr, trace, and make repro SEED=x, which replays any recorded torture
 seed to bit-identical verdicts; test/seeds.txt records every seed
 this project has used and what it proved. CI runs the same entry
 points; green here means green there.
+
+## Cycle 18 (2026-08-14): the frozen analysis and the codified glance
+
+H48: scripts/beam_analysis.py is the registered analysis - exact
+Poisson rate-ratio inference for ESC(B)/ESC(A) with fluence
+normalization (the G37 statistics design executed), the TT-harness
+confound subtraction with propagated uncertainty (G36), and the
+Weibull cross-section-vs-LET fit, all standard-library-only so the
+frozen script runs anywhere, forever. Its selftest runs in CI on
+every push against synthetic truth: the 10x-elevated case must flag,
+identical rates must not, a pure-harness run must come back
+insignificant, and the fit must recover a known curve. When beam data
+arrives the script runs untouched - the prediction discipline
+extended to the analysis.
+
+H40: the waveform policy is code now - raw dumps never commit
+(.gitignore enforces it), test/waves/ carries the .gtkw save files
+that codify where to look in every major testbench, docs/fig/ holds
+the annotated evidence figures, and curated mini-dumps have a stated
+home and size budget.

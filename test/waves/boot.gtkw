@@ -1,0 +1,19 @@
+[*] ZIRH boot controller - load, verify, commit and the revert ladder
+[dumpfile] (null)
+@28
+tb_boot.clk
+tb_boot.st_valid_i
+tb_boot.st_ready_o
+@22
+tb_boot.u_boot.state_q[2:0]
+tb_boot.u_boot.bcnt_q[3:0]
+tb_boot.u_boot.idx_q[9:0]
+tb_boot.u_boot.crc_q[31:0]
+tb_boot.u_boot.hcrc_q[31:0]
+@28
+tb_boot.evt_accept_o
+tb_boot.evt_reject_o
+tb_boot.boot_sel_o
+tb_boot.bank_o
+tb_boot.wd_fail_i
+tb_boot.signon_i
