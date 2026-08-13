@@ -207,3 +207,21 @@ instance whose address had never moved. The lesson is now discipline:
 slice instantiations are generate-loops or nothing, and every
 mechanical multi-site edit gets a grep count against the expected
 site count before it gets a simulation.
+
+## Cycle 13 (2026-08-14): the boot architecture lands
+
+docs/BOOT.md is the contract - the mask ROM becomes an immutable
+loader plus golden firmware, application images live in external
+rad-tolerant NVM or arrive from the host, execute from the SECDED
+SRAM - and zirh_boot_ctrl.v is its first hardware: transport-agnostic
+byte-stream sink, SRAM bus master, TMR state with the safe-state trap
+landing on GOLDEN (a mangled loader fails toward the mask ROM, never
+toward silence). The suite proves the claims on the real SECDED SRAM:
+a bank's valid flag flips only after the STORED image's read-back CRC
+matches (interruption tolerance is structural - a half-written bank
+never looks bootable), rejects fall back other-bank-then-golden, the
+HOST-mode ISP path stages fresh images into the inactive bank while
+running, and the watchdog revert ladder walks bank to bank to golden
+with no ground contact. The signature hook (sig_ok_i) is in the FSM
+so the product chip's public-key verdict drops in without touching
+the flow.
