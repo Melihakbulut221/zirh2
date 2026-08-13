@@ -419,3 +419,22 @@ the second death counted. The ASIC ring binds with the zirh_env_ro
 hand-instantiated cell discipline at the product-chip step; the
 module deliberately carries no main-clock assertions, because the
 main clock is the thing that dies.
+
+## Cycle 24 (2026-08-15): the DUT board on paper, testable before it
+## exists
+
+docs/DUT-BOARD.md closes the last engineering box on the beam
+checklist: a build-ready specification where every requirement cites
+the campaign document that demanded it. The SEL machinery is
+autonomous hardware - comparator trip under ten microseconds into a
+p-FET rail switch, because a latched DUT cooking during a network
+hiccup is how campaigns lose their silicon - with thresholds derived
+from measured bench baselines, never guessed. The mirror channel
+gets its own driver, cable and adapter, sharing nothing with the
+primary voice it exists to outlive. The mechanics keep everything
+but the carrier out of the spot so the G36 confound stays confined
+to what the control run measures, and the riser flips for the laser
+TPA session without redesign. The bring-up plan makes the board
+provable before any facility: trip rehearsal on an electronic load,
+long-cable soak, and a full remote-only mock shift with the door
+shut - if anything needs a hand, fix the board, not the procedure.

@@ -115,7 +115,8 @@ computation.
 - [x] Bench ladder as code (host/zirh_bench.py)
 - [x] Statistics design and flux cap (this document)
 - [x] Confound protocol (this document)
+- [x] DUT board specification with bring-up test plan
+      (docs/DUT-BOARD.md; the BUILD is a purchase, gated with the
+      campaign money)
 - [ ] GATE(decision): silicon in hand (shuttle submission)
-- [ ] GATE(money): facility choice and application
-- [ ] DUT board schematic and build (engineering, next in queue
-      after the QSPI-MRAM controller)
+- [ ] GATE(money): facility choice, application, board build
