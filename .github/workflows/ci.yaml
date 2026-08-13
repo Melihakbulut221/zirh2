@@ -91,6 +91,10 @@ jobs:
         run: python3 scripts/trace_check.py
       - name: registered beam analysis selftest
         run: python3 scripts/beam_analysis.py --selftest
+      - name: regmap sync gate
+        run: python3 scripts/regmap_gen.py --check
+      - name: bench-as-code selftest
+        run: python3 host/zirh_bench.py --selftest
 
   tmr-guard:
     runs-on: ubuntu-24.04

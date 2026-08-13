@@ -204,3 +204,24 @@ requirements:
       - test/test_sram_smoke.py
     evidence: ci.yaml units job (bare macro smoke)
 
+  - id: R20
+    text: The register map shall have one machine-readable source;
+      documentation and firmware headers shall be generated from it
+      and CI shall fail on any drift between the three.
+    tests:
+      - regmap.yaml
+      - scripts/regmap_gen.py
+    evidence: ci.yaml trace job (regmap sync gate + fw/zirh.h address
+      cross-check)
+
+  - id: R21
+    text: The bench bring-up ladder - smoke, soak with a measured
+      false-positive floor, shmoo envelope mapping - shall exist as
+      tested code before silicon, with the frozen beam analysis ready
+      to consume its outputs.
+    tests:
+      - host/zirh_bench.py
+      - scripts/beam_analysis.py
+    evidence: ci.yaml trace job selftests (mock chip: smoke passes,
+      broken sequence caught, quiet soak floor is zero)
+

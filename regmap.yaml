@@ -1,0 +1,120 @@
+# =============================================================================
+# ZIRH-2 - the register map, machine-readable single source (H47)
+#
+# Transcribed from the RTL decode blocks (zirh_uart_regs.v, zirh_hk.v,
+# zirh_ifc.v, zirh_bus.v slot decode) - the RTL is the truth, this
+# file is its queryable mirror, and scripts/regmap_gen.py generates
+# docs/REGMAP.md and fw/zirh_regs.h from here. CI regenerates and
+# diffs: if this file and the generated artifacts drift, the build
+# fails; if this file and the RTL drift, the R18 access tests are the
+# net. The hand-written fw/zirh.h is checked for address agreement.
+# =============================================================================
+
+blocks:
+
+  - name: ROM
+    base: 0x00000000
+    size: 0x400
+    description: mask ROM, 256x32, synthesized constants; dbus port for
+      the boot checksum self-test
+
+  - name: RAM
+    base: 0x00001000
+    size: 0x40
+    description: SECDED ECC RAM, 16 words; scrub-on-read; stack top at
+      0x1040
+
+  - name: UART
+    base: 0x00002000
+    registers:
+      - {name: STATUS, offset: 0x0, access: R,
+         fields: [{bit: 0, name: TX_FREE, desc: software TX slot free},
+                  {bit: 1, name: RX_AVAIL, desc: received byte waiting},
+                  {bit: 2, name: FERR_STICKY, desc: frame error latched},
+                  {bit: 3, name: OVR_STICKY, desc: RX overrun latched}]}
+      - {name: TXDATA, offset: 0x4, access: W,
+         fields: [{bits: "7:0", name: DATA, desc: byte to transmit,
+                   note: arbitrated with telemetry frames}]}
+      - {name: RXDATA, offset: 0x8, access: R,
+         fields: [{bits: "7:0", name: DATA, desc: received byte,
+                   note: read consumes}]}
+      - {name: BAUD, offset: 0xC, access: RW,
+         fields: [{bits: "15:0", name: DIV, desc: baud divisor,
+                   reset: RESET_DIV parameter}]}
+
+  - name: HK
+    base: 0x00003000
+    window: adr[6]==0
+    registers:
+      - {name: ID, offset: 0x00, access: R,
+         fields: [{bits: "31:16", name: MAGIC, desc: reads 0x5A32},
+                  {bit: 3, name: ARMED, desc: monitor warm-up done},
+                  {bit: 2, name: INFRA, desc: infrastructure TMR
+                     mismatch seen},
+                  {bits: "1:0", name: MODE, desc: pattern mode}]}
+      - {name: CTRL, offset: 0x04, access: RW,
+         fields: [{bits: "1:0", name: MODE, desc: pattern source mode,
+                   note: a CHANGED mode reloads the warm-up},
+                  {bit: 8, name: CLEAR, desc: write 1 clears the beam
+                     and event counters, one-shot}]}
+      - {name: CPU_SIG, offset: 0x08, access: RW,
+         fields: [{bits: "7:0", name: SIG, desc: firmware liveness
+                   signature; every write feeds the watchdog and
+                   toggles CPU_ALIVE}]}
+      - {name: INJECT, offset: 0x0C, access: W,
+         fields: [{bits: "2:0", name: TARGET, desc: one-shot fault
+                   injection at INJ_POS,
+                   enum: {0: plain, 1: chain A one replica,
+                          2: chain A all replicas,
+                          3: chain B one replica,
+                          4: chain B all replicas}}]}
+      - {name: CNT_PLAIN, offset: 0x10, access: R}
+      - {name: CNT_RAW_A, offset: 0x14, access: R}
+      - {name: CNT_ESC_A, offset: 0x18, access: R}
+      - {name: CNT_RAW_B, offset: 0x1C, access: R}
+      - {name: CNT_ESC_B, offset: 0x20, access: R}
+      - {name: CNT_ECC_C, offset: 0x24, access: R}
+      - {name: CNT_ECC_U, offset: 0x28, access: R}
+      - {name: CNT_BUSTO, offset: 0x2C, access: R}
+      - {name: CNT_FERR, offset: 0x30, access: R}
+      - {name: BOOT_CNT, offset: 0x34, access: R,
+         fields: [{bits: "7:0", name: COUNT, desc: watchdog reboots
+                   survived; a warm restart does NOT increment}]}
+      - {name: ENV_RO, offset: 0x38, access: RW,
+         fields: [{bit: 31, name: BUSY, desc: oscillator window
+                   running (read)},
+                  {bits: "15:0", name: COUNT, desc: ring-oscillator
+                   window count (read)},
+                  {bit: 0, name: START, desc: write 1 starts a TID
+                   window, one-shot}]}
+      - {name: ENV_SB, offset: 0x3C, access: RW,
+         fields: [{bits: "15:8", name: BURST, desc: burst correlator
+                   count (read)},
+                  {bits: "7:0", name: SET, desc: SET catcher count
+                   (read)},
+                  {bit: 0, name: TEST, desc: write 1 fires the SET
+                   self-test pulse, one-shot}]}
+
+  - name: IFC
+    base: 0x00003040
+    window: adr[6]==1
+    registers:
+      - {name: CAN_STAT, offset: 0x00, access: R,
+         fields: [{bits: "31:24", name: TXC, desc: frames transmitted},
+                  {bits: "23:16", name: ERRC, desc: protocol errors},
+                  {bits: "15:8", name: RXC, desc: frames received},
+                  {bits: "7:0", name: RXD, desc: last received byte}]}
+      - {name: CAN_CTRL, offset: 0x04, access: W,
+         fields: [{bit: 0, name: BEACON, desc: write 1 queues one CAN
+                   beacon frame, one-shot}]}
+      - {name: SPW_STAT, offset: 0x08, access: R,
+         fields: [{bits: "31:24", name: RXC, desc: last received char},
+                  {bits: "23:16", name: ERRS, desc: link error count},
+                  {bits: "15:8", name: NULLS, desc: NULLs seen},
+                  {bits: "2:0", name: STATE, desc: link FSM state}]}
+      - {name: SPW_CTRL, offset: 0x0C, access: W,
+         fields: [{bit: 0, name: LINK_EN, desc: link enable level,
+                   TMR-registered},
+                  {bit: 1, name: SEND, desc: write 1 queues the char
+                   in bits 15:8, one-shot},
+                  {bits: "15:8", name: CHAR, desc: character to send}]}

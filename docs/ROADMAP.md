@@ -321,3 +321,26 @@ H40: the waveform policy is code now - raw dumps never commit
 that codify where to look in every major testbench, docs/fig/ holds
 the annotated evidence figures, and curated mini-dumps have a stated
 home and size budget.
+
+## Cycle 19 (2026-08-14): the register map as data, the bench as code
+
+H47: regmap.yaml is the single machine-readable source of the
+register map, transcribed from the RTL decode blocks - every UART,
+housekeeping, environment and interface register with its fields,
+one-shot semantics and reset notes. scripts/regmap_gen.py generates
+docs/REGMAP.md and fw/zirh_regs.h from it, and the CI sync gate
+regenerates and diffs on every push: the YAML, the doc and the header
+cannot drift apart silently, and the hand-written fw/zirh.h is
+cross-checked address by address (it agreed on all thirteen - the
+firmware and the RTL were already telling the same story, and now a
+gate keeps it that way).
+
+H45: host/zirh_bench.py is the G31 bring-up ladder as code - smoke
+(frames, checksums, sequence, living signature, echo, exit code for a
+rig), soak (the long logger with the false-positive-floor report that
+certifies the beam counters), and shmoo (envelope mapping with a
+pluggable instrument interface that degrades to operator prompts).
+All of it tested today against a mock of the chip's telemetry in CI:
+the smoke must pass on the healthy mock, must catch a broken
+sequence, and the quiet soak floor must be exactly zero. Silicon day
+is a key press. The traceability map grew R20 and R21 to claim both.
