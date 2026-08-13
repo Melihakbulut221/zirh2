@@ -471,3 +471,20 @@ can see) is now recorded. sdf.yaml runs the three-corner matrix on
 demand per hardening release, staging netlist and SDF from the SAME
 named run, never mixed. The slow-corner local run is in flight; its
 verdict lands in this entry's follow-up.
+
+## Cycle 27 (2026-08-15): the software ecosystem's first stone
+
+F29 starts where the competition's real value lives: fw/hal/ is the
+driver layer - UART, watchdog signon, the full EDAC counter block,
+fault injection, the environment instruments and both interface
+experiments - written as static inline over the GENERATED register
+header, so the HAL cannot drift from the RTL without the CI regmap
+gate failing first. The example application is the canonical
+flight-shaped main loop (sign on, watch the counters, make
+uncorrectables loud, answer the ground) and compiles to 244 bytes at
+-Wall -Werror with no libc; the linker script places a loaded
+application in the boot controller's bank layout per docs/BOOT.md.
+The fw workflow gates the compile on every push. Toolchain, linker
+scripts, HAL, example: four of the brief's five ecosystem items in
+the repository; the dev board rides with the DUT board, and the RTOS
+port stays queued for the product core.

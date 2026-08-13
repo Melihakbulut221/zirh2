@@ -35,6 +35,12 @@ jobs:
       - name: Build firmware
         run: make -C fw CROSS=riscv-none-elf-
 
+      - name: HAL compile gate (F29) - the driver layer agrees with
+              the generated register map at -Wall -Werror
+        run: |
+          riscv-none-elf-gcc -march=rv32i_zicsr -mabi=ilp32 -Os             -ffreestanding -nostdlib -Wall -Werror             -c fw/hal/example_app.c -o /tmp/example_app.o
+          riscv-none-elf-size /tmp/example_app.o
+
       - name: Report size
         run: |
           SIZE=$(stat -c%s fw/build/fw.bin)

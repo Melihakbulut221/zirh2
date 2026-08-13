@@ -280,3 +280,14 @@ requirements:
       resurrected twice; detection, sticky semantics and the count
       all asserted)
 
+  - id: R27
+    text: The firmware driver layer shall be generated-map-true: every
+      HAL access resolves against addresses generated from
+      regmap.yaml, and the example application shall compile clean at
+      -Wall -Werror with no libc.
+    tests:
+      - fw/hal/zirh_hal.h
+      - fw/hal/example_app.c
+    evidence: fw.yaml HAL compile gate; ci.yaml regmap sync gate
+      guarantees the addresses cannot drift from the RTL
+
