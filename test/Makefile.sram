@@ -1,0 +1,15 @@
+# ZIRH-2 program P1 - bare SRAM macro smoke (scripts run: make -f Makefile.sram)
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRAM_V = $(PDK_ROOT)/ihp-sg13g2/libs.ref/sg13g2_sram/verilog
+
+SIM_BUILD = sim_build/sram
+
+COMPILE_ARGS += -DFUNCTIONAL
+VERILOG_SOURCES += $(SRAM_V)/RM_IHPSG13_1P_core_behavioral_bm_bist.v
+VERILOG_SOURCES += $(SRAM_V)/RM_IHPSG13_1P_1024x8_c2_bm_bist.v
+
+TOPLEVEL = RM_IHPSG13_1P_1024x8_c2_bm_bist
+COCOTB_TEST_MODULES = test_sram_smoke
+
+include $(shell cocotb-config --makefiles)/Makefile.sim
