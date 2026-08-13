@@ -1,0 +1,23 @@
+# ZIRH bench shmoo plan (host/zirh_bench.py shmoo --plan this)
+# freq_mhz,voltage - the operating-envelope grid. Nominal is
+# 20 MHz at 1.2V; the grid walks frequency against voltage to map
+# the pass/fail boundary (G31). Edit for the actual PSU/generator
+# ranges before the bench session; this is the default sweep.
+#
+# nominal-voltage frequency walk
+5,1.20
+10,1.20
+15,1.20
+20,1.20
+25,1.20
+30,1.20
+35,1.20
+40,1.20
+# voltage margin at nominal frequency
+20,1.08
+20,1.14
+20,1.26
+20,1.32
+# the corners the STA and SDF sims characterized - confirm on silicon
+40,1.32
+15,1.08
