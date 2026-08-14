@@ -1,207 +1,279 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" font-family="monospace">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 800" font-family="-apple-system,'Segoe UI',Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#455a64"/>
+    </marker>
+    <marker id="arrE" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/>
+    </marker>
+  </defs>
   <style>
-    .blk  { fill: #f4f4f4; stroke: #333; stroke-width: 1.2; }
-    .sub  { fill: #ffffff; stroke: #666; stroke-width: 0.9; }
-    .grp  { fill: none; stroke: #333; stroke-width: 1.4; }
-    .t    { font-size: 11px; fill: #111; }
-    .s    { font-size: 9.5px; fill: #333; }
-    .h    { font-size: 12px; font-weight: bold; fill: #111; }
-    .pin  { font-size: 9.5px; fill: #0a4a8a; }
-    .w    { stroke: #444; stroke-width: 1; fill: none; }
-    .we   { stroke: #a01212; stroke-width: 1; fill: none; stroke-dasharray: 4 2; }
+    .bg      { fill: #ffffff; }
+    .title   { font-size: 19px; font-weight: 700; fill: #1a252f; }
+    .sub     { font-size: 11.5px; fill: #5a6b78; }
+    .gtitle  { font-size: 13px; font-weight: 700; }
+    .btitle  { font-size: 12px; font-weight: 600; fill: #1a252f; }
+    .btext   { font-size: 10px; fill: #43535f; }
+    .mono    { font-family: 'SFMono-Regular',Consolas,Menlo,monospace; }
+    .pin     { font-size: 10px; font-weight: 600; fill: #ffffff; }
+    .pinlbl  { font-size: 9px; fill: #5a6b78; }
+    .wire    { stroke: #455a64; stroke-width: 1.4; fill: none; }
+    .ewire   { stroke: #c0392b; stroke-width: 1.3; fill: none; stroke-dasharray: 5 3; }
+    .note    { font-size: 10.5px; fill: #5a6b78; font-style: italic; }
   </style>
 
-  <text x="480" y="18" text-anchor="middle" class="h">ZIRH-2 (tt_um_hma_zirh2) - detailed block diagram</text>
-  <text x="480" y="32" text-anchor="middle" class="s">every named box is an RTL instance; dashed red = event/error paths to pins</text>
+  <rect x="0" y="0" width="1040" height="800" class="bg"/>
 
-  <!-- ==================== left: inputs ==================== -->
-  <text x="8"  y="66"  class="pin">clk (ext)</text>
-  <text x="8"  y="86"  class="pin">rst_n</text>
-  <text x="8"  y="150" class="pin">ui[3] UART_RX</text>
-  <text x="8"  y="560" class="pin">uio[0] CAN_RX</text>
-  <text x="8"  y="580" class="pin">uio[2] SPW_DIN</text>
-  <text x="8"  y="600" class="pin">uio[3] SPW_SIN</text>
+  <text x="520" y="34" text-anchor="middle" class="title">ZIRH-2 - instance-level block diagram</text>
+  <text x="520" y="52" text-anchor="middle" class="sub">tt_um_hma_zirh2 on the Tiny Tapeout harness - every named box is an RTL instance - dashed red = event/error paths</text>
 
-  <!-- ==================== u_clk_rst ==================== -->
-  <rect x="95" y="48" width="150" height="60" class="blk"/>
-  <text x="170" y="64" text-anchor="middle" class="t">u_clk_rst</text>
-  <text x="170" y="78" text-anchor="middle" class="s">reset conditioning</text>
-  <text x="170" y="90" text-anchor="middle" class="s">heartbeat divider</text>
-  <text x="170" y="102" text-anchor="middle" class="s">watchdog reset merge</text>
-  <path d="M85 62 L95 62 M85 82 L95 82" class="w"/>
+  <!-- ================= clk_rst ================= -->
+  <rect x="70" y="76" width="200" height="72" rx="9" fill="#eef1f4" stroke="#5f6b76" stroke-width="1.4"/>
+  <text x="170" y="96" text-anchor="middle" class="btitle mono">u_clk_rst</text>
+  <text x="170" y="112" text-anchor="middle" class="btext">reset conditioning - heartbeat divider</text>
+  <text x="170" y="126" text-anchor="middle" class="btext">watchdog reset merges here (SoC only)</text>
 
-  <!-- ==================== u_soc group ==================== -->
-  <rect x="95" y="130" width="330" height="290" class="grp"/>
-  <text x="105" y="146" class="h">u_soc</text>
+  <!-- input pin pills -->
+  <g class="mono">
+    <rect x="8" y="84" width="46" height="18" rx="9" fill="#37474f"/>
+    <text x="31" y="97" text-anchor="middle" class="pin">clk</text>
+    <rect x="8" y="108" width="46" height="18" rx="9" fill="#37474f"/>
+    <text x="31" y="121" text-anchor="middle" class="pin">rst_n</text>
+    <text x="8" y="232" class="pinlbl">UART_RX</text>
+    <rect x="8" y="236" width="52" height="18" rx="9" fill="#1f5f8b"/>
+    <text x="34" y="249" text-anchor="middle" class="pin">ui[3]</text>
+    <text x="8" y="596" class="pinlbl">CAN_RX</text>
+    <rect x="8" y="600" width="52" height="18" rx="9" fill="#1f7a7a"/>
+    <text x="34" y="613" text-anchor="middle" class="pin">uio[0]</text>
+    <text x="8" y="640" class="pinlbl">SPW_DIN</text>
+    <rect x="8" y="644" width="52" height="18" rx="9" fill="#1f7a7a"/>
+    <text x="34" y="657" text-anchor="middle" class="pin">uio[2]</text>
+    <text x="8" y="684" class="pinlbl">SPW_SIN</text>
+    <rect x="8" y="688" width="52" height="18" rx="9" fill="#1f7a7a"/>
+    <text x="34" y="701" text-anchor="middle" class="pin">uio[3]</text>
+  </g>
+  <path d="M54 93 L70 93" class="wire" marker-end="url(#arr)"/>
+  <path d="M54 117 L70 117" class="wire" marker-end="url(#arr)"/>
 
-  <rect x="110" y="160" width="140" height="70" class="sub"/>
-  <text x="180" y="175" text-anchor="middle" class="t">u_cpu</text>
-  <text x="180" y="188" text-anchor="middle" class="s">SERV RV32I bit-serial</text>
-  <text x="180" y="200" text-anchor="middle" class="s">full-state TMR wrap</text>
-  <text x="180" y="212" text-anchor="middle" class="s">(serv_synth_wrapper)</text>
+  <!-- ================= SoC group ================= -->
+  <rect x="70" y="180" width="380" height="360" rx="12" fill="#e9f0fb" stroke="#3b6fc9" stroke-width="1.8"/>
+  <text x="86" y="202" class="gtitle" fill="#2a4d8f">u_soc - the computer</text>
 
-  <rect x="270" y="160" width="140" height="70" class="sub"/>
-  <text x="340" y="175" text-anchor="middle" class="t">u_rom</text>
-  <text x="340" y="188" text-anchor="middle" class="s">mask ROM 256 words</text>
-  <text x="340" y="200" text-anchor="middle" class="s">golden firmware +</text>
-  <text x="340" y="212" text-anchor="middle" class="s">XOR checksum answer</text>
+  <rect x="86" y="214" width="165" height="88" rx="7" fill="#ffffff" stroke="#7b9bd2" stroke-width="1.2"/>
+  <text x="168" y="232" text-anchor="middle" class="btitle mono">u_cpu</text>
+  <text x="168" y="247" text-anchor="middle" class="btext">SERV RV32I bit-serial core</text>
+  <text x="168" y="260" text-anchor="middle" class="btext">full-state TMR wrapper</text>
+  <text x="168" y="273" text-anchor="middle" class="btext">every flop voted, 2-of-3</text>
+  <text x="168" y="290" text-anchor="middle" class="btext mono">serv_synth_wrapper</text>
 
-  <rect x="110" y="250" width="140" height="60" class="sub"/>
-  <text x="180" y="265" text-anchor="middle" class="t">u_bus</text>
-  <text x="180" y="278" text-anchor="middle" class="s">ibus/dbus mux +</text>
-  <text x="180" y="290" text-anchor="middle" class="s">bus watchdog (timeout)</text>
+  <rect x="269" y="214" width="165" height="88" rx="7" fill="#ffffff" stroke="#7b9bd2" stroke-width="1.2"/>
+  <text x="351" y="232" text-anchor="middle" class="btitle mono">u_rom</text>
+  <text x="351" y="247" text-anchor="middle" class="btext">mask ROM, 256 words</text>
+  <text x="351" y="260" text-anchor="middle" class="btext">golden firmware, pipelined</text>
+  <text x="351" y="273" text-anchor="middle" class="btext">fetch, XOR checksum</text>
+  <text x="351" y="290" text-anchor="middle" class="btext">answered on 'R'</text>
 
-  <rect x="270" y="250" width="140" height="60" class="sub"/>
-  <text x="340" y="265" text-anchor="middle" class="t">u_ram</text>
-  <text x="340" y="278" text-anchor="middle" class="s">64 B ECC RAM</text>
-  <text x="340" y="290" text-anchor="middle" class="s">SECDED 39/32</text>
+  <rect x="86" y="316" width="165" height="70" rx="7" fill="#ffffff" stroke="#7b9bd2" stroke-width="1.2"/>
+  <text x="168" y="334" text-anchor="middle" class="btitle mono">u_bus</text>
+  <text x="168" y="349" text-anchor="middle" class="btext">ibus/dbus mux + arbiter</text>
+  <text x="168" y="362" text-anchor="middle" class="btext">bus watchdog: a wedged slave</text>
+  <text x="168" y="375" text-anchor="middle" class="btext">costs an event, not the CPU</text>
 
-  <rect x="110" y="330" width="140" height="70" class="sub"/>
-  <text x="180" y="345" text-anchor="middle" class="t">u_uart</text>
-  <text x="180" y="358" text-anchor="middle" class="s">RX/TX registers</text>
-  <text x="180" y="370" text-anchor="middle" class="s">TMR BAUD divisor</text>
-  <text x="180" y="382" text-anchor="middle" class="s">(a hit cannot kill link)</text>
+  <rect x="269" y="316" width="165" height="70" rx="7" fill="#ffffff" stroke="#7b9bd2" stroke-width="1.2"/>
+  <text x="351" y="334" text-anchor="middle" class="btitle mono">u_ram</text>
+  <text x="351" y="349" text-anchor="middle" class="btext">64 B ECC RAM</text>
+  <text x="351" y="362" text-anchor="middle" class="btext">SECDED 39/32 - corrects 1,</text>
+  <text x="351" y="375" text-anchor="middle" class="btext">detects 2, counts both</text>
 
-  <rect x="270" y="330" width="140" height="70" class="sub"/>
-  <text x="340" y="345" text-anchor="middle" class="t">firmware view</text>
-  <text x="340" y="358" text-anchor="middle" class="s">echo b+1, counters,</text>
-  <text x="340" y="370" text-anchor="middle" class="s">inject 0-4, env T/S/B/E,</text>
-  <text x="340" y="382" text-anchor="middle" class="s">links k/K/w/W, 'R' sum</text>
+  <rect x="86" y="400" width="165" height="82" rx="7" fill="#ffffff" stroke="#7b9bd2" stroke-width="1.2"/>
+  <text x="168" y="418" text-anchor="middle" class="btitle mono">u_uart</text>
+  <text x="168" y="433" text-anchor="middle" class="btext">RX/TX registers</text>
+  <text x="168" y="446" text-anchor="middle" class="btext">TMR'd BAUD divisor -</text>
+  <text x="168" y="459" text-anchor="middle" class="btext">a single hit cannot</text>
+  <text x="168" y="472" text-anchor="middle" class="btext">kill the ground link</text>
 
-  <path d="M250 195 L270 195" class="w"/>
-  <path d="M180 230 L180 250" class="w"/>
-  <path d="M250 280 L270 280" class="w"/>
-  <path d="M180 310 L180 330" class="w"/>
-  <path d="M85 146 L110 146 L110 160" class="w"/>
+  <rect x="269" y="400" width="165" height="82" rx="7" fill="#ffffff" stroke="#7b9bd2" stroke-width="1.2"/>
+  <text x="351" y="418" text-anchor="middle" class="btitle">command set (firmware)</text>
+  <text x="351" y="433" text-anchor="middle" class="btext mono">echo b+1 - inject 0..4 - C</text>
+  <text x="351" y="446" text-anchor="middle" class="btext mono">R rom-sum - T/S/B/E env</text>
+  <text x="351" y="459" text-anchor="middle" class="btext mono">k/K CAN - w/W SpaceWire</text>
+  <text x="351" y="472" text-anchor="middle" class="btext">answers share the TX line</text>
 
-  <!-- ==================== u_hk group ==================== -->
-  <rect x="455" y="130" width="250" height="330" class="grp"/>
-  <text x="465" y="146" class="h">u_hk - monitor + housekeeping</text>
+  <path d="M251 258 L269 258" class="wire" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <path d="M168 302 L168 316" class="wire" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <path d="M251 351 L269 351" class="wire" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <path d="M168 386 L168 400" class="wire" marker-end="url(#arr)" marker-start="url(#arr)"/>
+  <path d="M60 245 L74 245 L74 430 L86 430" class="wire" marker-end="url(#arr)"/>
+  <path d="M170 148 L170 180" class="wire" marker-end="url(#arr)"/>
 
-  <rect x="470" y="160" width="100" height="60" class="sub"/>
-  <text x="520" y="175" text-anchor="middle" class="t">ring PLAIN</text>
-  <text x="520" y="188" text-anchor="middle" class="s">unprotected</text>
-  <text x="520" y="200" text-anchor="middle" class="s">reference N=64</text>
+  <!-- ================= HK group ================= -->
+  <rect x="470" y="180" width="290" height="360" rx="12" fill="#fdf3e3" stroke="#d08a1f" stroke-width="1.8"/>
+  <text x="486" y="202" class="gtitle" fill="#9a660f">u_hk - monitor + housekeeping</text>
 
-  <rect x="585" y="160" width="105" height="60" class="sub"/>
-  <text x="637" y="175" text-anchor="middle" class="t">ring TMR A</text>
-  <text x="637" y="188" text-anchor="middle" class="s">zirh_tmr_ff32 macros</text>
-  <text x="637" y="200" text-anchor="middle" class="s">680-1380 um apart</text>
+  <rect x="486" y="214" width="122" height="74" rx="7" fill="#ffffff" stroke="#dcae62" stroke-width="1.2"/>
+  <text x="547" y="231" text-anchor="middle" class="btitle">ring PLAIN</text>
+  <text x="547" y="246" text-anchor="middle" class="btext">unprotected reference</text>
+  <text x="547" y="259" text-anchor="middle" class="btext">N=64 - the raw</text>
+  <text x="547" y="272" text-anchor="middle" class="btext">cross-section yardstick</text>
 
-  <rect x="470" y="235" width="100" height="60" class="sub"/>
-  <text x="520" y="250" text-anchor="middle" class="t">ring TMR B</text>
-  <text x="520" y="263" text-anchor="middle" class="s">identical logic,</text>
-  <text x="520" y="275" text-anchor="middle" class="s">tool-placed control</text>
+  <rect x="622" y="214" width="122" height="74" rx="7" fill="#ffffff" stroke="#dcae62" stroke-width="1.2"/>
+  <text x="683" y="231" text-anchor="middle" class="btitle">ring TMR A</text>
+  <text x="683" y="246" text-anchor="middle" class="btext mono">zirh_tmr_ff32 macros</text>
+  <text x="683" y="259" text-anchor="middle" class="btext">replicas held</text>
+  <text x="683" y="272" text-anchor="middle" class="btext">680-1380 um apart</text>
 
-  <rect x="585" y="235" width="105" height="60" class="sub"/>
-  <text x="637" y="250" text-anchor="middle" class="t">beam counters</text>
-  <text x="637" y="263" text-anchor="middle" class="s">PLAIN RAW_A ESC_A</text>
-  <text x="637" y="275" text-anchor="middle" class="s">RAW_B ESC_B (TMR)</text>
+  <rect x="486" y="302" width="122" height="74" rx="7" fill="#ffffff" stroke="#dcae62" stroke-width="1.2"/>
+  <text x="547" y="319" text-anchor="middle" class="btitle">ring TMR B</text>
+  <text x="547" y="334" text-anchor="middle" class="btext">identical logic,</text>
+  <text x="547" y="347" text-anchor="middle" class="btext">tool-placed control -</text>
+  <text x="547" y="360" text-anchor="middle" class="btext">same-bit pair 3.78 um</text>
 
-  <rect x="470" y="310" width="220" height="60" class="sub"/>
-  <text x="580" y="325" text-anchor="middle" class="t">housekeeping islands (all TMR)</text>
-  <text x="580" y="338" text-anchor="middle" class="s">mode phase warm boot wd</text>
-  <text x="580" y="350" text-anchor="middle" class="s">ecc_c ecc_u busto ferr counters</text>
+  <rect x="622" y="302" width="122" height="74" rx="7" fill="#ffffff" stroke="#dcae62" stroke-width="1.2"/>
+  <text x="683" y="319" text-anchor="middle" class="btitle">beam counters</text>
+  <text x="683" y="334" text-anchor="middle" class="btext mono">PLAIN RAW_A ESC_A</text>
+  <text x="683" y="347" text-anchor="middle" class="btext mono">RAW_B ESC_B</text>
+  <text x="683" y="360" text-anchor="middle" class="btext">16-bit, TMR'd</text>
 
-  <rect x="470" y="385" width="220" height="55" class="sub"/>
-  <text x="580" y="400" text-anchor="middle" class="t">CPU watchdog</text>
-  <text x="580" y="413" text-anchor="middle" class="s">signature stalls -> chip reset,</text>
-  <text x="580" y="425" text-anchor="middle" class="s">BOOT counter increments</text>
+  <rect x="486" y="390" width="258" height="62" rx="7" fill="#ffffff" stroke="#dcae62" stroke-width="1.2"/>
+  <text x="615" y="407" text-anchor="middle" class="btitle">housekeeping islands - all TMR</text>
+  <text x="615" y="422" text-anchor="middle" class="btext mono">mode phase warm boot wd</text>
+  <text x="615" y="435" text-anchor="middle" class="btext mono">ecc_c ecc_u busto ferr</text>
 
-  <path d="M570 190 L585 190" class="w"/>
-  <path d="M570 265 L585 265" class="w"/>
-  <path d="M637 220 L637 235" class="w"/>
+  <rect x="486" y="464" width="258" height="62" rx="7" fill="#ffffff" stroke="#dcae62" stroke-width="1.2"/>
+  <text x="615" y="481" text-anchor="middle" class="btitle">CPU watchdog</text>
+  <text x="615" y="496" text-anchor="middle" class="btext">firmware signature stalls -> SoC reset</text>
+  <text x="615" y="509" text-anchor="middle" class="btext">(instrument keeps running) - BOOT++</text>
 
-  <!-- ==================== u_env group ==================== -->
-  <rect x="725" y="130" width="215" height="200" class="grp"/>
-  <text x="735" y="146" class="h">u_env - environment</text>
+  <path d="M608 251 L622 251" class="wire"/>
+  <path d="M608 339 L622 339" class="wire"/>
+  <path d="M683 288 L683 302" class="wire" marker-end="url(#arr)"/>
 
-  <rect x="740" y="160" width="185" height="45" class="sub"/>
-  <text x="832" y="175" text-anchor="middle" class="t">u_ro - TID dosimeter</text>
-  <text x="832" y="188" text-anchor="middle" class="s">ring oscillator + window count</text>
+  <!-- ================= ENV group ================= -->
+  <rect x="780" y="180" width="230" height="226" rx="12" fill="#e9f5ec" stroke="#2e8b57" stroke-width="1.8"/>
+  <text x="796" y="202" class="gtitle" fill="#1f6b41">u_env - environment</text>
 
-  <rect x="740" y="215" width="185" height="45" class="sub"/>
-  <text x="832" y="230" text-anchor="middle" class="t">u_set - SET catcher</text>
-  <text x="832" y="243" text-anchor="middle" class="s">pulse chain + count (TMR)</text>
+  <rect x="796" y="214" width="198" height="54" rx="7" fill="#ffffff" stroke="#79b795" stroke-width="1.2"/>
+  <text x="895" y="231" text-anchor="middle" class="btitle mono">u_ro - TID dosimeter</text>
+  <text x="895" y="246" text-anchor="middle" class="btext">ring oscillator, gated window</text>
+  <text x="895" y="259" text-anchor="middle" class="btext">count - dose from frequency shift</text>
 
-  <rect x="740" y="270" width="185" height="45" class="sub"/>
-  <text x="832" y="285" text-anchor="middle" class="t">burst correlator</text>
-  <text x="832" y="298" text-anchor="middle" class="s">MBU/pile-up separation (TMR)</text>
+  <rect x="796" y="276" width="198" height="54" rx="7" fill="#ffffff" stroke="#79b795" stroke-width="1.2"/>
+  <text x="895" y="293" text-anchor="middle" class="btitle mono">u_set - SET catcher</text>
+  <text x="895" y="308" text-anchor="middle" class="btext">combinational pulse chain,</text>
+  <text x="895" y="321" text-anchor="middle" class="btext">latched count (TMR) - 'E' self-test</text>
 
-  <!-- ==================== telemetry ==================== -->
-  <rect x="455" y="480" width="250" height="80" class="blk"/>
-  <text x="580" y="496" text-anchor="middle" class="t">u_tlm (v2 telemetry)</text>
-  <text x="580" y="509" text-anchor="middle" class="s">0x5A 0x33 + 18 bytes, XOR checksum</text>
-  <text x="580" y="521" text-anchor="middle" class="s">every 65536 cycles: counters, env,</text>
-  <text x="580" y="533" text-anchor="middle" class="s">CPU signature - CPU cannot block it</text>
-  <text x="580" y="551" text-anchor="middle" class="s">line shared with firmware TX (mux)</text>
+  <rect x="796" y="338" width="198" height="54" rx="7" fill="#ffffff" stroke="#79b795" stroke-width="1.2"/>
+  <text x="895" y="355" text-anchor="middle" class="btitle">burst correlator</text>
+  <text x="895" y="370" text-anchor="middle" class="btext">events close in time -> burst bin,</text>
+  <text x="895" y="383" text-anchor="middle" class="btext">separates MBU from pile-up (TMR)</text>
 
-  <rect x="725" y="480" width="215" height="80" class="blk"/>
-  <text x="832" y="496" text-anchor="middle" class="t">u_mirror (TLM_MIRROR)</text>
-  <text x="832" y="509" text-anchor="middle" class="s">second voice: frames only,</text>
-  <text x="832" y="521" text-anchor="middle" class="s">own serializer, own pin -</text>
-  <text x="832" y="533" text-anchor="middle" class="s">survives a flooded or hijacked</text>
-  <text x="832" y="545" text-anchor="middle" class="s">primary UART</text>
+  <!-- ================= TLM ================= -->
+  <rect x="470" y="576" width="290" height="120" rx="12" fill="#f2ecfa" stroke="#7a4bbf" stroke-width="1.8"/>
+  <text x="486" y="598" class="gtitle" fill="#5b3391">u_tlm - telemetry v2</text>
+  <text x="615" y="618" text-anchor="middle" class="btext mono">0x5A 0x33 + 18 bytes + XOR checksum</text>
+  <text x="615" y="633" text-anchor="middle" class="btext">unprompted every 65536 cycles: counters,</text>
+  <text x="615" y="646" text-anchor="middle" class="btext">environment, CPU signature</text>
+  <text x="615" y="661" text-anchor="middle" class="btext">hardware-owned - the CPU cannot block it</text>
+  <text x="615" y="681" text-anchor="middle" class="btext">shares UART_TX with firmware answers (mux)</text>
 
-  <!-- ==================== u_ifc ==================== -->
-  <rect x="95" y="480" width="330" height="120" class="grp"/>
-  <text x="105" y="496" class="h">u_ifc - interface experiments</text>
+  <!-- ================= MIRROR ================= -->
+  <rect x="780" y="576" width="230" height="120" rx="12" fill="#f2ecfa" stroke="#7a4bbf" stroke-width="1.8"/>
+  <text x="796" y="598" class="gtitle" fill="#5b3391">u_mirror - second voice</text>
+  <text x="895" y="618" text-anchor="middle" class="btext">frames only, own serializer,</text>
+  <text x="895" y="633" text-anchor="middle" class="btext">own pin - no shared driver</text>
+  <text x="895" y="648" text-anchor="middle" class="btext">with the primary link</text>
+  <text x="895" y="668" text-anchor="middle" class="btext">survives a flooded or</text>
+  <text x="895" y="681" text-anchor="middle" class="btext">hijacked primary UART</text>
 
-  <rect x="110" y="505" width="140" height="80" class="sub"/>
-  <text x="180" y="520" text-anchor="middle" class="t">u_can (CAN-lite)</text>
-  <text x="180" y="533" text-anchor="middle" class="s">beacon TX + RX + ACK</text>
-  <text x="180" y="545" text-anchor="middle" class="s">wired-AND drive, TMR</text>
-  <text x="180" y="557" text-anchor="middle" class="s">state, error counters,</text>
-  <text x="180" y="569" text-anchor="middle" class="s">golden-model verified</text>
+  <!-- ================= IFC group ================= -->
+  <rect x="70" y="576" width="380" height="120" rx="12" fill="#e4f4f4" stroke="#2b9d9d" stroke-width="1.8"/>
+  <text x="86" y="598" class="gtitle" fill="#1c6f6f">u_ifc - interface experiments</text>
 
-  <rect x="270" y="505" width="140" height="80" class="sub"/>
-  <text x="340" y="520" text-anchor="middle" class="t">u_spw (SpaceWire-lite)</text>
-  <text x="340" y="533" text-anchor="middle" class="s">data/strobe link, Run</text>
-  <text x="340" y="545" text-anchor="middle" class="s">state machine, char</text>
-  <text x="340" y="557" text-anchor="middle" class="s">round-trip, TMR state,</text>
-  <text x="340" y="569" text-anchor="middle" class="s">golden-model verified</text>
+  <rect x="86" y="608" width="165" height="76" rx="7" fill="#ffffff" stroke="#6fbcbc" stroke-width="1.2"/>
+  <text x="168" y="625" text-anchor="middle" class="btitle mono">u_can - CAN-lite</text>
+  <text x="168" y="640" text-anchor="middle" class="btext">beacon TX, RX, ACK pull,</text>
+  <text x="168" y="653" text-anchor="middle" class="btext">wired-AND drive - TMR state,</text>
+  <text x="168" y="666" text-anchor="middle" class="btext">error counters, verified</text>
+  <text x="168" y="679" text-anchor="middle" class="btext">against a golden model</text>
 
-  <!-- ==================== wires ==================== -->
-  <!-- uart rx to soc -->
-  <path d="M85 146 L95 146" class="w"/>
-  <!-- soc to tlm (signature, counters read) -->
-  <path d="M425 370 L455 500 " class="w"/>
+  <rect x="269" y="608" width="165" height="76" rx="7" fill="#ffffff" stroke="#6fbcbc" stroke-width="1.2"/>
+  <text x="351" y="625" text-anchor="middle" class="btitle mono">u_spw - SpaceWire-lite</text>
+  <text x="351" y="640" text-anchor="middle" class="btext">data/strobe pair, link FSM</text>
+  <text x="351" y="653" text-anchor="middle" class="btext">to Run, char round-trip -</text>
+  <text x="351" y="666" text-anchor="middle" class="btext">TMR state, verified against</text>
+  <text x="351" y="679" text-anchor="middle" class="btext">a golden model</text>
+
+  <!-- ================= main wires ================= -->
+  <!-- soc row to tlm -->
+  <path d="M330 540 L330 558 L500 558 L500 576" class="wire" marker-end="url(#arr)"/>
+  <text x="368" y="554" class="pinlbl">counters + signature</text>
   <!-- hk to tlm -->
-  <path d="M580 460 L580 480" class="w"/>
+  <path d="M615 540 L615 576" class="wire" marker-end="url(#arr)"/>
   <!-- env to tlm -->
-  <path d="M832 330 L832 420 L705 500" class="w"/>
+  <path d="M895 406 L895 500 L740 558 L740 576 L730 576" class="wire"/>
+  <path d="M895 406 L895 500 L760 540 L700 568 L700 576" class="wire" opacity="0"/>
   <!-- tlm to mirror -->
-  <path d="M705 520 L725 520" class="w"/>
-  <!-- ifc pins -->
-  <path d="M85 556 L110 556 M85 576 L270 576 M85 596 L270 582" class="w"/>
+  <path d="M760 636 L780 636" class="wire" marker-end="url(#arr)"/>
 
-  <!-- ==================== right: outputs ==================== -->
-  <text x="948" y="66"  text-anchor="end" class="pin">uo[0] HEARTBEAT</text>
-  <text x="948" y="86"  text-anchor="end" class="pin">uo[1] CPU_ALIVE</text>
-  <text x="948" y="106" text-anchor="end" class="pin">uo[2] SEU_EVT</text>
-  <text x="948" y="126" text-anchor="end" class="pin">uo[3] ERR_TMR</text>
-  <text x="948" y="360" text-anchor="end" class="pin">uo[5] ECC_EVT</text>
-  <text x="948" y="380" text-anchor="end" class="pin">uo[6] BUS_TIMEOUT</text>
-  <text x="948" y="400" text-anchor="end" class="pin">uo[7] ARMED</text>
-  <text x="948" y="470" text-anchor="end" class="pin">uo[4] UART_TX</text>
-  <text x="948" y="590" text-anchor="end" class="pin">uio[7] TLM_MIRROR</text>
-  <text x="948" y="620" text-anchor="end" class="pin">uio[1] CAN_TX</text>
-  <text x="948" y="640" text-anchor="end" class="pin">uio[4] SPW_DOUT</text>
-  <text x="948" y="660" text-anchor="end" class="pin">uio[5] SPW_SOUT</text>
+  <!-- ifc pins in -->
+  <path d="M60 609 L74 609 L74 626 L86 626" class="wire" marker-end="url(#arr)"/>
+  <path d="M60 653 L68 653 L68 690 L300 690 L300 684" class="wire" marker-end="url(#arr)"/>
+  <path d="M60 697 L64 697 L64 702 L336 702 L336 684" class="wire" marker-end="url(#arr)"/>
 
-  <path d="M245 62 L940 62" class="w"/>
-  <path d="M425 180 L860 82 L862 82" class="w"/>
-  <path d="M705 190 L940 102" class="we"/>
-  <path d="M705 340 L940 122" class="we"/>
-  <path d="M425 285 L940 356" class="we"/>
-  <path d="M250 300 L425 300 L940 376" class="we"/>
-  <path d="M705 430 L940 396" class="w"/>
-  <path d="M705 540 L940 466" class="w"/>
-  <path d="M832 560 L832 582 L935 582" class="w"/>
-  <path d="M250 616 L940 616 M410 636 L940 636 M410 656 L940 656" class="w"/>
-  <path d="M180 585 L180 616 L250 616" class="w"/>
-  <path d="M340 585 L340 636 L410 636" class="w"/>
-  <path d="M360 585 L360 656 L410 656" class="w"/>
+  <!-- ================= output pin pills ================= -->
+  <g class="mono">
+    <rect x="936" y="84"  width="96" height="18" rx="9" fill="#455a64"/>
+    <text x="984" y="97"  text-anchor="middle" class="pin">uo[0] HEARTBEAT</text>
+    <rect x="936" y="108" width="96" height="18" rx="9" fill="#455a64"/>
+    <text x="984" y="121" text-anchor="middle" class="pin">uo[1] CPU_ALIVE</text>
+    <rect x="936" y="132" width="96" height="18" rx="9" fill="#8c2f23"/>
+    <text x="984" y="145" text-anchor="middle" class="pin">uo[2] SEU_EVT</text>
+    <rect x="936" y="156" width="96" height="18" rx="9" fill="#8c2f23"/>
+    <text x="984" y="169" text-anchor="middle" class="pin">uo[3] ERR_TMR</text>
+    <rect x="936" y="430" width="96" height="18" rx="9" fill="#8c2f23"/>
+    <text x="984" y="443" text-anchor="middle" class="pin">uo[5] ECC_EVT</text>
+    <rect x="936" y="454" width="96" height="18" rx="9" fill="#8c2f23"/>
+    <text x="984" y="467" text-anchor="middle" class="pin">uo[6] BUS_TMOUT</text>
+    <rect x="936" y="478" width="96" height="18" rx="9" fill="#455a64"/>
+    <text x="984" y="491" text-anchor="middle" class="pin">uo[7] ARMED</text>
+    <rect x="936" y="536" width="96" height="18" rx="9" fill="#1f5f8b"/>
+    <text x="984" y="549" text-anchor="middle" class="pin">uo[4] UART_TX</text>
+    <rect x="936" y="710" width="96" height="18" rx="9" fill="#5b3391"/>
+    <text x="984" y="723" text-anchor="middle" class="pin">uio[7] MIRROR</text>
+    <rect x="820" y="734" width="96" height="18" rx="9" fill="#1f7a7a"/>
+    <text x="868" y="747" text-anchor="middle" class="pin">uio[1] CAN_TX</text>
+    <rect x="122" y="710" width="96" height="18" rx="9" fill="#1f7a7a"/>
+    <text x="170" y="723" text-anchor="middle" class="pin">uio[4] SPW_DOUT</text>
+    <rect x="234" y="710" width="96" height="18" rx="9" fill="#1f7a7a"/>
+    <text x="282" y="723" text-anchor="middle" class="pin">uio[5] SPW_SOUT</text>
+  </g>
 
-  <text x="480" y="688" text-anchor="middle" class="s">Placement experiment: ring TMR A replicas are macro-bound 680-1380 um apart at hardening; ring TMR B is the tool-placed control (closest same-bit pair 3.78 um). ESCAPE(A) vs ESCAPE(B) under beam is the registered prediction.</text>
+  <!-- heartbeat: clk_rst across the top -->
+  <path d="M270 93 L936 93" class="wire" marker-end="url(#arr)"/>
+  <!-- cpu_alive from cpu -->
+  <path d="M450 240 L910 240 L910 117 L936 117" class="wire" marker-end="url(#arr)"/>
+  <!-- SEU event from hk rings -->
+  <path d="M744 232 L770 232 L770 141 L936 141" class="ewire" marker-end="url(#arrE)"/>
+  <!-- ERR_TMR: any replica mismatch -->
+  <path d="M760 420 L772 420 L772 165 L936 165" class="ewire" marker-end="url(#arrE)"/>
+  <!-- ECC event from ram -->
+  <path d="M434 360 L460 360 L460 439 L936 439" class="ewire" marker-end="url(#arrE)"/>
+  <!-- bus timeout -->
+  <path d="M251 370 L258 370 L258 393 L460 393 L460 463 L936 463" class="ewire" marker-end="url(#arrE)"/>
+  <!-- armed -->
+  <path d="M744 495 L820 495 L820 487 L936 487" class="wire" marker-end="url(#arr)"/>
+  <!-- uart tx from tlm -->
+  <path d="M760 610 L900 610 L900 545 L936 545" class="wire" marker-end="url(#arr)"/>
+  <!-- mirror out -->
+  <path d="M895 696 L895 719 L936 719" class="wire" marker-end="url(#arr)"/>
+  <!-- can/spw outs -->
+  <path d="M168 684 L168 700 L145 700 L145 719 L122 719" class="wire" opacity="0"/>
+  <path d="M168 684 L170 710" class="wire" marker-end="url(#arr)"/>
+  <path d="M282 684 L282 710" class="wire" marker-end="url(#arr)"/>
+  <path d="M251 670 L868 734" class="wire" opacity="0"/>
+  <path d="M251 646 L460 646 L460 743 L820 743" class="wire" marker-end="url(#arr)"/>
+
+  <!-- footnote -->
+  <text x="520" y="772" text-anchor="middle" class="note">The placement experiment: ring TMR A's replicas are macro-bound 680-1380 um apart; ring TMR B is the tool-placed control.</text>
+  <text x="520" y="788" text-anchor="middle" class="note">ESCAPE(A) vs ESCAPE(B) under beam is the registered, falsifiable prediction (docs/PREDICTION.md).</text>
 </svg>
