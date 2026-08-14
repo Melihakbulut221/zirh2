@@ -30,10 +30,10 @@ wedged peripheral costs an event, not the CPU.
 
 ## Block diagram
 
-A detailed instance-level diagram - every RTL instance, the full pin
-map and the event paths - is at
-[docs/fig/block_diagram_detailed.svg](docs/fig/block_diagram_detailed.svg).
-The short form:
+![ZIRH-2 instance-level block diagram](docs/fig/block_diagram_detailed.svg)
+
+<details>
+<summary>ASCII short form</summary>
 
 ```
                 ui[3] UART_RX
@@ -69,6 +69,8 @@ The short form:
   ECC_EVT, BUS_TIMEOUT, ARMED - instrument vs computer failure
   visible on two LEDs with no software anywhere
 ```
+
+</details>
 
 The separation that matters: the watchdog reboots only the SoC, so the
 instruments and both telemetry voices count straight through a CPU
