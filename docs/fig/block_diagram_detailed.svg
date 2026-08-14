@@ -205,20 +205,19 @@
 
   <!-- ================= main wires ================= -->
   <!-- soc row to tlm -->
-  <path d="M330 540 L330 558 L500 558 L500 576" class="wire" marker-end="url(#arr)"/>
-  <text x="368" y="554" class="pinlbl">counters + signature</text>
+  <path d="M330 540 L330 570 L500 570 L500 576" class="wire" marker-end="url(#arr)"/>
+  <text x="340" y="566" class="pinlbl">counters + signature</text>
   <!-- hk to tlm -->
   <path d="M615 540 L615 576" class="wire" marker-end="url(#arr)"/>
   <!-- env to tlm -->
-  <path d="M895 406 L895 500 L740 558 L740 576 L730 576" class="wire"/>
-  <path d="M895 406 L895 500 L760 540 L700 568 L700 576" class="wire" opacity="0"/>
+  <path d="M895 406 L895 566 L740 566 L740 576" class="wire" marker-end="url(#arr)"/>
   <!-- tlm to mirror -->
   <path d="M760 636 L780 636" class="wire" marker-end="url(#arr)"/>
 
   <!-- ifc pins in -->
   <path d="M60 609 L74 609 L74 626 L86 626" class="wire" marker-end="url(#arr)"/>
-  <path d="M60 653 L68 653 L68 690 L300 690 L300 684" class="wire" marker-end="url(#arr)"/>
-  <path d="M60 697 L64 697 L64 702 L336 702 L336 684" class="wire" marker-end="url(#arr)"/>
+  <path d="M60 653 L68 653 L68 690 L290 690 L290 684" class="wire" marker-end="url(#arr)"/>
+  <path d="M60 697 L64 697 L64 702 L425 702 L425 684" class="wire" marker-end="url(#arr)"/>
 
   <!-- ================= output pin pills ================= -->
   <g class="mono">
@@ -242,36 +241,34 @@
     <text x="984" y="723" text-anchor="middle" class="pin">uio[7] MIRROR</text>
     <rect x="820" y="734" width="96" height="18" rx="9" fill="#1f7a7a"/>
     <text x="868" y="747" text-anchor="middle" class="pin">uio[1] CAN_TX</text>
-    <rect x="122" y="710" width="96" height="18" rx="9" fill="#1f7a7a"/>
-    <text x="170" y="723" text-anchor="middle" class="pin">uio[4] SPW_DOUT</text>
-    <rect x="234" y="710" width="96" height="18" rx="9" fill="#1f7a7a"/>
-    <text x="282" y="723" text-anchor="middle" class="pin">uio[5] SPW_SOUT</text>
+    <rect x="257" y="710" width="96" height="18" rx="9" fill="#1f7a7a"/>
+    <text x="305" y="723" text-anchor="middle" class="pin">uio[4] SPW_DOUT</text>
+    <rect x="357" y="710" width="96" height="18" rx="9" fill="#1f7a7a"/>
+    <text x="405" y="723" text-anchor="middle" class="pin">uio[5] SPW_SOUT</text>
   </g>
 
   <!-- heartbeat: clk_rst across the top -->
   <path d="M270 93 L936 93" class="wire" marker-end="url(#arr)"/>
-  <!-- cpu_alive from cpu -->
-  <path d="M450 240 L910 240 L910 117 L936 117" class="wire" marker-end="url(#arr)"/>
-  <!-- SEU event from hk rings -->
-  <path d="M744 232 L770 232 L770 141 L936 141" class="ewire" marker-end="url(#arrE)"/>
-  <!-- ERR_TMR: any replica mismatch -->
-  <path d="M760 420 L772 420 L772 165 L936 165" class="ewire" marker-end="url(#arrE)"/>
-  <!-- ECC event from ram -->
-  <path d="M434 360 L460 360 L460 439 L936 439" class="ewire" marker-end="url(#arrE)"/>
-  <!-- bus timeout -->
-  <path d="M251 370 L258 370 L258 393 L460 393 L460 463 L936 463" class="ewire" marker-end="url(#arrE)"/>
+  <!-- cpu_alive: out the top of the soc, along the clear lane above the groups -->
+  <path d="M430 180 L430 117 L936 117" class="wire" marker-end="url(#arr)"/>
+  <!-- SEU event: out the top of hk, same lane -->
+  <path d="M683 180 L683 141 L936 141" class="ewire" marker-end="url(#arrE)"/>
+  <!-- ERR_TMR: any replica mismatch, out the top of hk -->
+  <path d="M710 180 L710 165 L936 165" class="ewire" marker-end="url(#arrE)"/>
+  <!-- ECC event: down the soc/hk gap, under the groups, up the right lane -->
+  <path d="M434 345 L452 345 L452 548 L920 548 L920 439 L936 439" class="ewire" marker-end="url(#arrE)"/>
+  <!-- bus timeout: down the soc column gap, under the groups, up the right lane -->
+  <path d="M251 375 L260 375 L260 556 L925 556 L925 463 L936 463" class="ewire" marker-end="url(#arrE)"/>
   <!-- armed -->
-  <path d="M744 495 L820 495 L820 487 L936 487" class="wire" marker-end="url(#arr)"/>
-  <!-- uart tx from tlm -->
-  <path d="M760 610 L900 610 L900 545 L936 545" class="wire" marker-end="url(#arr)"/>
+  <path d="M744 495 L910 495 L910 487 L936 487" class="wire" marker-end="url(#arr)"/>
+  <!-- uart tx from tlm: up the tlm/mirror gap -->
+  <path d="M760 610 L770 610 L770 545 L936 545" class="wire" marker-end="url(#arr)"/>
   <!-- mirror out -->
   <path d="M895 696 L895 719 L936 719" class="wire" marker-end="url(#arr)"/>
   <!-- can/spw outs -->
-  <path d="M168 684 L168 700 L145 700 L145 719 L122 719" class="wire" opacity="0"/>
-  <path d="M168 684 L170 710" class="wire" marker-end="url(#arr)"/>
-  <path d="M282 684 L282 710" class="wire" marker-end="url(#arr)"/>
-  <path d="M251 670 L868 734" class="wire" opacity="0"/>
-  <path d="M251 646 L460 646 L460 743 L820 743" class="wire" marker-end="url(#arr)"/>
+  <path d="M168 684 L168 743 L820 743" class="wire" marker-end="url(#arr)"/>
+  <path d="M305 684 L305 710" class="wire" marker-end="url(#arr)"/>
+  <path d="M405 684 L405 710" class="wire" marker-end="url(#arr)"/>
 
   <!-- footnote -->
   <text x="520" y="772" text-anchor="middle" class="note">The placement experiment: ring TMR A's replicas are macro-bound 680-1380 um apart; ring TMR B is the tool-placed control.</text>
