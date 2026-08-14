@@ -28,7 +28,8 @@
 `default_nettype none
 
 module zirh_boot_ctrl #(
-    parameter integer BANK_WORDS = 512    // words per bank, 2 banks
+    parameter integer BANK_WORDS = 512,   // words per bank, 2 banks
+    parameter PROTECT = 1                 // 0: plain regs (safe-fail host)
 ) (
     input  wire        clk,
     input  wire        rst_n,          // POR only - NOT the watchdog reset
@@ -91,7 +92,7 @@ module zirh_boot_ctrl #(
     wire [2:0] state_q;
     reg  [2:0] state_d;
     wire       state_err;
-    zirh_tmr_reg #(.WIDTH(3)) u_state (
+    zirh_boot_reg #(.WIDTH(3), .PROTECT(PROTECT)) u_state (
         .clk(clk), .rst_n(rst_n), .en_i(1'b1), .d_i(state_d),
         .q_o(state_q), .err_o(state_err));
 
@@ -99,17 +100,17 @@ module zirh_boot_ctrl #(
     wire pref_q, va_q, vb_q, sa_q, sb_q, sel_q;
     reg  pref_d, va_d, vb_d, sa_d, sb_d, sel_d;
     wire e1, e2, e3, e4, e5, e6;
-    zirh_tmr_reg #(.WIDTH(1)) u_pref (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(1), .PROTECT(PROTECT)) u_pref (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(pref_d), .q_o(pref_q), .err_o(e1));
-    zirh_tmr_reg #(.WIDTH(1)) u_va (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(1), .PROTECT(PROTECT)) u_va (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(va_d), .q_o(va_q), .err_o(e2));
-    zirh_tmr_reg #(.WIDTH(1)) u_vb (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(1), .PROTECT(PROTECT)) u_vb (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(vb_d), .q_o(vb_q), .err_o(e3));
-    zirh_tmr_reg #(.WIDTH(1)) u_sa (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(1), .PROTECT(PROTECT)) u_sa (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(sa_d), .q_o(sa_q), .err_o(e4));
-    zirh_tmr_reg #(.WIDTH(1)) u_sb (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(1), .PROTECT(PROTECT)) u_sb (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(sb_d), .q_o(sb_q), .err_o(e5));
-    zirh_tmr_reg #(.WIDTH(1)) u_sel (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(1), .PROTECT(PROTECT)) u_sel (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(sel_d), .q_o(sel_q), .err_o(e6));
 
     // load-path working set
@@ -126,25 +127,25 @@ module zirh_boot_ctrl #(
     reg  [9:0]  idx_d;
     reg  [3:0]  bcnt_d;
     wire e7, e8, e9, e10, e11, e12, e13, e14;
-    zirh_tmr_reg #(.WIDTH(2))  u_strap (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(2), .PROTECT(PROTECT))  u_strap (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(strap_d), .q_o(strap_q), .err_o(e7));
-    zirh_tmr_reg #(.WIDTH(1))  u_tgt  (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(1), .PROTECT(PROTECT))  u_tgt  (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(tgt_d), .q_o(tgt_q), .err_o(e8));
-    zirh_tmr_reg #(.WIDTH(16)) u_hlen (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(16), .PROTECT(PROTECT)) u_hlen (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(hlen_d), .q_o(hlen_q), .err_o(e9));
-    zirh_tmr_reg #(.WIDTH(16)) u_hver (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(16), .PROTECT(PROTECT)) u_hver (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(hver_d), .q_o(hver_q), .err_o(e10));
-    zirh_tmr_reg #(.WIDTH(32)) u_hcrc (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(32), .PROTECT(PROTECT)) u_hcrc (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(hcrc_d), .q_o(hcrc_q), .err_o(e11));
-    zirh_tmr_reg #(.WIDTH(32)) u_crc  (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(32), .PROTECT(PROTECT)) u_crc  (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(crc_d), .q_o(crc_q), .err_o(e12));
-    zirh_tmr_reg #(.WIDTH(32)) u_word (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(32), .PROTECT(PROTECT)) u_word (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(word_d), .q_o(word_q), .err_o(e13));
-    zirh_tmr_reg #(.WIDTH(10)) u_idx  (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(10), .PROTECT(PROTECT)) u_idx  (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(idx_d), .q_o(idx_q), .err_o(e14));
     // byte counter is small and self-healing through the flow; TMR too
     wire e15;
-    zirh_tmr_reg #(.WIDTH(4))  u_bcnt (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(4), .PROTECT(PROTECT))  u_bcnt (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(bcnt_d), .q_o(bcnt_q), .err_o(e15));
 
     assign err_o = state_err | e1 | e2 | e3 | e4 | e5 | e6 | e7 | e8
@@ -348,3 +349,45 @@ module zirh_boot_ctrl #(
 endmodule
 
 `default_nettype wire
+
+
+// ----------------------------------------------------------------------------
+// zirh_boot_reg - the loader's register primitive with a PROTECT knob.
+// PROTECT=1 is the real thing (zirh_tmr_reg, voted feedback, mismatch
+// pulse). PROTECT=0 is one plain register with err_o tied low - for a
+// die whose area cannot carry the replicas and whose loader already
+// fails SAFE: every confusion mode of this FSM lands on the mask ROM,
+// and the image itself is judged by the read-back CRC either way. The
+// generate scope lives HERE, inside the loader, so no hierarchical
+// path anywhere else in the design moves.
+// ----------------------------------------------------------------------------
+module zirh_boot_reg #(
+    parameter WIDTH  = 8,
+    parameter [WIDTH-1:0] RESET_VALUE = {WIDTH{1'b0}},
+    parameter PROTECT = 1
+) (
+    input  wire             clk,
+    input  wire             rst_n,
+    input  wire             en_i,
+    input  wire [WIDTH-1:0] d_i,
+    output wire [WIDTH-1:0] q_o,
+    output wire             err_o
+);
+
+    generate
+    if (PROTECT != 0) begin : g_tmr
+        zirh_tmr_reg #(.WIDTH(WIDTH), .RESET_VALUE(RESET_VALUE)) u_r (
+            .clk(clk), .rst_n(rst_n), .en_i(en_i), .d_i(d_i),
+            .q_o(q_o), .err_o(err_o));
+    end else begin : g_plain
+        reg [WIDTH-1:0] q_q;
+        always @(posedge clk) begin
+            if (!rst_n)    q_q <= RESET_VALUE;
+            else if (en_i) q_q <= d_i;
+        end
+        assign q_o   = q_q;
+        assign err_o = 1'b0;
+    end
+    endgenerate
+
+endmodule

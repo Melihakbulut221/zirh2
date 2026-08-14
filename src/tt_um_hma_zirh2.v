@@ -98,7 +98,8 @@ module tt_um_hma_zirh2 #(
   // fetch from the bank. A refused image - and a running image the
   // watchdog fails before it ever signs on - falls back to the mask
   // ROM. The transport is unprotected on purpose: the read-back CRC is
-  // the boundary that decides, and the loader itself is TMR throughout.
+  // the boundary that decides. On THIS die the loader runs PROTECT=0
+  // (see the instantiation note); ZIRH-3 keeps the TMR default.
   wire        isp_strap = ui_in[2];
   wire [7:0]  isp_rx_data;
   wire        isp_rx_valid;
@@ -142,7 +143,13 @@ module tt_um_hma_zirh2 #(
       end
   end
 
-  zirh_boot_ctrl #(.BANK_WORDS(16)) u_boot (
+  // PROTECT=0 on this die: the experiment left 16.7% of the area free
+  // and the TMR'd loader did not fit it (placement failed at CTS,
+  // measured). The un-replicated loader's confusion modes all fall to
+  // the mask ROM through the same case-default trap, the image is still
+  // judged by the read-back CRC, and ZIRH-3's instantiation keeps the
+  // TMR default - the protection moved to where the area exists.
+  zirh_boot_ctrl #(.BANK_WORDS(16), .PROTECT(0)) u_boot (
       .clk          (clk),
       .rst_n        (rst_n_sys),
       .strap_i      ({1'b0, isp_strap}),
