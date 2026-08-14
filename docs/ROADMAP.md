@@ -592,6 +592,10 @@ placement recipe holds with the ISP on the die. The lesson threaded
 through every round is the night's refrain - a knob that returns
 success is not a knob that did the work; add visibility, do not guess
 (the per-proof cap, the SDC-read check, the homeless-cell census each
-turned a blank failure into a named one). The gl_test GL campaign on
-the shipped netlist runs its ~4-hour course as this lands; the
-placement verdict - the nine-round result - is already in.
+turned a blank failure into a named one). FOLLOW-UP: the gl_test GL campaign on the shipped netlist (384
+single-replica injections, the survived/rebooted/zombie contract)
+passed too - hardening, precheck, viewer AND gl_test all green on the
+ISP-carrying netlist. The programming interface is proven at gate
+level, not just RTL: the loader fits, the placement recipe holds, and
+the fault campaign confirms the hardening survived the ISP's arrival.
+The nine-round campaign is closed, end to end.
