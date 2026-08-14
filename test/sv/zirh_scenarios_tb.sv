@@ -78,7 +78,11 @@ module zirh_scenarios_tb;
   wire [7:0]  uio_out;
   wire [7:0]  uio_oe;
 
-  tt_um_hma_zirh2 dut (
+  // RESET_DIV=20 mirrors every cocotb suite. Stated HERE, on the
+  // instance, because iverilog's -P reaches only root-scope modules
+  // and the root here is the bench - a -P on the DUT is silently
+  // ignored (measured: the chip kept talking at 174).
+  tt_um_hma_zirh2 #(.RESET_DIV(20)) dut (
     .ui_in(ui_in), .uo_out(uo_out), .uio_in(uio_in), .uio_out(uio_out),
     .uio_oe(uio_oe), .ena(ena), .clk(clk), .rst_n(rst_n));
 
@@ -229,10 +233,9 @@ module zirh_scenarios_tb;
       rst_n = 1'b0;
       repeat (8) @(posedge clk);
       rst_n = 1'b1;
-      // twice the nominal boot: the bit-serial CPU needs milliseconds to
-      // reach the BAUD write, and before it lands the serializer runs at
-      // the slow reset divisor - listening early hears a slow line, not
-      // silence (measured; the cocotb suites wait the same 240k)
+      // twice the nominal boot, matching the cocotb integration suite:
+      // the bit-serial CPU needs the second window to finish crt0 and
+      // reach the command loop before a scenario talks to it
       repeat (2 * BOOT_CYCLES) @(posedge clk);
     end
   endtask
