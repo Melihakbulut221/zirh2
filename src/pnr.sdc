@@ -12,11 +12,11 @@
 # constrains construction, not the verdict.
 # =============================================================================
 
-set clk_port [get_ports clk]
-create_clock -name clk -period 40 $clk_port
+create_clock -name clk -period 40 [get_ports clk]
 
-set nonclk_inputs [remove_from_collection [all_inputs] $clk_port]
-set_input_delay  8 -clock clk $nonclk_inputs
+# inputs enumerated explicitly: the sdc interpreter in the construction
+# steps has no remove_from_collection (measured, round 8)
+set_input_delay  8 -clock clk [get_ports {rst_n ena ui_in[*] uio_in[*]}]
 set_output_delay 8 -clock clk [all_outputs]
 
 set_max_fanout 16 [current_design]
