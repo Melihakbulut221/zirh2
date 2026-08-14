@@ -107,9 +107,10 @@ module tt_um_hma_zirh2 #(
   wire [31:0] bl_adr, bl_dat, bl_rdt;
   wire        bl_ack;
   reg         isp_rejected_q;
-  reg  [7:0]  sig_prev_q;
   reg         signon_seen_q;
-  reg  [WD_LIMIT_LOG2:0] run_age_q;
+  // grace age in tick256 pulses: one full watchdog period is
+  // 2^(WD_LIMIT_LOG2-8) ticks - same wall-clock grace, 8 fewer flops
+  reg  [WD_LIMIT_LOG2-8:0] run_age_q;
 
   wire isp_hold  = isp_strap & ~bl_sel & ~isp_rejected_q;
   wire soc_rst_n = rst_n_sys & ~wd_rst & ~isp_hold;
@@ -118,27 +119,27 @@ module tt_um_hma_zirh2 #(
       .clk(clk), .rst_n(rst_n_sys), .rx_i(ui_in[3]),
       .data_o(isp_rx_data), .valid_o(isp_rx_valid));
 
-  // A loaded program signs on by changing the telemetry signature. The
+  // A loaded program signs on the moment it writes the telemetry
+  // signature - the housekeeping block already pulses cpu_alive per
+  // CPU_SIG write, so sign-on detection costs zero new state. The
   // watchdog verdict toward the loader is gated by one full watchdog
   // period of grace, so a starvation pulse left over from the ISP hold
   // cannot fail a bank that never had a chance to run. Plain counter on
   // purpose: a hit here at worst shifts one revert by one period, and
   // the bank's read-back CRC has already ruled on the contents.
-  wire signon     = bl_sel & (cpu_sig != sig_prev_q);
+  wire signon     = bl_sel & cpu_alive;
   wire wd_verdict = wd_rst & bl_sel &
-                    (signon_seen_q | run_age_q[WD_LIMIT_LOG2]);
+                    (signon_seen_q | run_age_q[WD_LIMIT_LOG2-8]);
 
   always @(posedge clk) begin
       if (!rst_n_sys) begin
           isp_rejected_q <= 1'b0;
-          sig_prev_q     <= 8'h00;
           signon_seen_q  <= 1'b0;
-          run_age_q      <= {(WD_LIMIT_LOG2+1){1'b0}};
+          run_age_q      <= {(WD_LIMIT_LOG2-7){1'b0}};
       end else begin
           if (bl_rej) isp_rejected_q <= 1'b1;
-          sig_prev_q <= cpu_sig;
           if (signon) signon_seen_q <= 1'b1;
-          if (bl_sel & ~run_age_q[WD_LIMIT_LOG2])
+          if (bl_sel & tick256 & ~run_age_q[WD_LIMIT_LOG2-8])
               run_age_q <= run_age_q + 1'b1;
       end
   end
@@ -362,7 +363,7 @@ module tt_um_hma_zirh2 #(
   assign uio_oe  = 8'b1011_0010;
 
   wire _unused = &{ena, ui_in[7:4], ui_in[1:0], uio_in[7:6],
-                   uio_in[5:4], uio_in[1], tick16, tick256,
+                   uio_in[5:4], uio_in[1], tick16,
                    bl_bank, bl_acc, 1'b0};
 `ifdef ZIRH_TWIN_LITE
   wire _unused_lite = &{uio_in[0], uio_in[3:2], 1'b0};

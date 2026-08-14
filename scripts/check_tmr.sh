@@ -256,13 +256,14 @@ run_check "zirh_ifc      (CAN + SpW + bus regs)" \
 # FFs: soc 2156 + hk 706 + tlm2 213 + env 125 + ifc 376 + clk_rst 79
 # + mirror 30 + the ISP loader (PROTECT=0: ~160 plain FFs of FSM,
 # header, CRC and receiver plus the top's sign-on/grace glue) + glue
-# = 3880 after the loader diet (version register dropped, index
-# sized to the bank, RX counter narrowed; measured 2026-08-16).
-# Replicas stay 49: the PROTECT=0
+# = 3864 after the loader diet rounds (version register dropped,
+# index sized to the bank, RX counter narrowed, sign-on detection
+# reusing hk's cpu_alive pulse, grace age in tick256 units;
+# measured 2026-08-16). Replicas stay 49: the PROTECT=0
 # loader replicates nothing on this die; ZIRH-3's PROTECT=1
 # instantiation is where its replicas live.
 run_check "tt_um_hma_zirh2 (ZIRH-2 top)" \
-    tt_um_hma_zirh2 49 3880 zirh_tmr_ff \
+    tt_um_hma_zirh2 49 3864 zirh_tmr_ff \
     serv/serv_aligner.v serv/serv_alu.v serv/serv_bufreg2.v \
     serv/serv_bufreg.v serv/serv_compdec.v serv/serv_csr.v \
     serv/serv_ctrl.v serv/serv_decode.v serv/serv_immdec.v \
