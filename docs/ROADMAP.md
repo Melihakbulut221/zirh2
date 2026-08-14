@@ -553,3 +553,45 @@ come back instead. Debug lesson of the cycle: the program wrote its
 signature to the wrong register offset for a while, and every layer
 below it - loader, CRC, fetch mux, bus - was proven innocent one
 probe at a time before the five-line firmware confessed.
+
+## Cycle 30 (2026-08-16): nine rounds to fit the loader on the die
+
+The ISP was RTL-complete but the hardening run refused it: detailed
+placement failed at CTS, then at the post-GRT hold resizer - the
+TMR'd loader's ~540 flops did not fit the 16.7% of die the experiment
+left free. Nine hardening rounds settled it, each recorded in
+src/config.json where the campaign keeps its lessons, and the value
+was in learning which knobs connect to the wall and which are theatre:
+
+- PROTECT=0 on the loader (a local generate primitive, no hierarchy
+  path elsewhere moves): the loader fails safe to the mask ROM through
+  its case-default trap and the image is judged by read-back CRC
+  either way, so this die trades its replicas for area it does not
+  have; ZIRH-3 keeps the TMR default where the area exists. -343 flops.
+- Density target 79->82->79: left the homeless cell set IDENTICAL -
+  disconnected from the wall.
+- Hold-slack margin 0.06->0.02->0.06: exploded insertions 132->2431 -
+  a lottery at this fullness, disconnected.
+- Displacement reach 250->400: aligned with the failing cell TYPE
+  (homeless hold buffers gain delay when pushed far) but not enough
+  alone.
+- Two loader diets: dropped the version register (parsed, never read),
+  sized the word index to the bank (4 bits not 10), narrowed the RX
+  counter, and reused hk's cpu_alive pulse + a tick256 grace counter
+  instead of shadow state. -23 flops of the tightest kind.
+- The real wall, named by the census: post-GRT repair_design inserting
+  2002 buffers for 401 max-fanout violations - the reset cone
+  re-buffered after the ISP hold gate joined it. MAX_FANOUT_CONSTRAINT
+  proved disconnected (identical 401/2002 across runs) because the
+  flow fell back to a generic PNR SDC; an explicit src/pnr.sdc with
+  fanout 16 stated where the tools READ it broke the wall. At 20 MHz
+  with +22 ns setup slack a fanout-10 rule buys nothing this die needs.
+
+Hardening, precheck and viewer then passed: the loader fits, the
+placement recipe holds with the ISP on the die. The lesson threaded
+through every round is the night's refrain - a knob that returns
+success is not a knob that did the work; add visibility, do not guess
+(the per-proof cap, the SDC-read check, the homeless-cell census each
+turned a blank failure into a named one). The gl_test GL campaign on
+the shipped netlist runs its ~4-hour course as this lands; the
+placement verdict - the nine-round result - is already in.
