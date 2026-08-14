@@ -1,0 +1,207 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" font-family="monospace">
+  <style>
+    .blk  { fill: #f4f4f4; stroke: #333; stroke-width: 1.2; }
+    .sub  { fill: #ffffff; stroke: #666; stroke-width: 0.9; }
+    .grp  { fill: none; stroke: #333; stroke-width: 1.4; }
+    .t    { font-size: 11px; fill: #111; }
+    .s    { font-size: 9.5px; fill: #333; }
+    .h    { font-size: 12px; font-weight: bold; fill: #111; }
+    .pin  { font-size: 9.5px; fill: #0a4a8a; }
+    .w    { stroke: #444; stroke-width: 1; fill: none; }
+    .we   { stroke: #a01212; stroke-width: 1; fill: none; stroke-dasharray: 4 2; }
+  </style>
+
+  <text x="480" y="18" text-anchor="middle" class="h">ZIRH-2 (tt_um_hma_zirh2) - detailed block diagram</text>
+  <text x="480" y="32" text-anchor="middle" class="s">every named box is an RTL instance; dashed red = event/error paths to pins</text>
+
+  <!-- ==================== left: inputs ==================== -->
+  <text x="8"  y="66"  class="pin">clk (ext)</text>
+  <text x="8"  y="86"  class="pin">rst_n</text>
+  <text x="8"  y="150" class="pin">ui[3] UART_RX</text>
+  <text x="8"  y="560" class="pin">uio[0] CAN_RX</text>
+  <text x="8"  y="580" class="pin">uio[2] SPW_DIN</text>
+  <text x="8"  y="600" class="pin">uio[3] SPW_SIN</text>
+
+  <!-- ==================== u_clk_rst ==================== -->
+  <rect x="95" y="48" width="150" height="60" class="blk"/>
+  <text x="170" y="64" text-anchor="middle" class="t">u_clk_rst</text>
+  <text x="170" y="78" text-anchor="middle" class="s">reset conditioning</text>
+  <text x="170" y="90" text-anchor="middle" class="s">heartbeat divider</text>
+  <text x="170" y="102" text-anchor="middle" class="s">watchdog reset merge</text>
+  <path d="M85 62 L95 62 M85 82 L95 82" class="w"/>
+
+  <!-- ==================== u_soc group ==================== -->
+  <rect x="95" y="130" width="330" height="290" class="grp"/>
+  <text x="105" y="146" class="h">u_soc</text>
+
+  <rect x="110" y="160" width="140" height="70" class="sub"/>
+  <text x="180" y="175" text-anchor="middle" class="t">u_cpu</text>
+  <text x="180" y="188" text-anchor="middle" class="s">SERV RV32I bit-serial</text>
+  <text x="180" y="200" text-anchor="middle" class="s">full-state TMR wrap</text>
+  <text x="180" y="212" text-anchor="middle" class="s">(serv_synth_wrapper)</text>
+
+  <rect x="270" y="160" width="140" height="70" class="sub"/>
+  <text x="340" y="175" text-anchor="middle" class="t">u_rom</text>
+  <text x="340" y="188" text-anchor="middle" class="s">mask ROM 256 words</text>
+  <text x="340" y="200" text-anchor="middle" class="s">golden firmware +</text>
+  <text x="340" y="212" text-anchor="middle" class="s">XOR checksum answer</text>
+
+  <rect x="110" y="250" width="140" height="60" class="sub"/>
+  <text x="180" y="265" text-anchor="middle" class="t">u_bus</text>
+  <text x="180" y="278" text-anchor="middle" class="s">ibus/dbus mux +</text>
+  <text x="180" y="290" text-anchor="middle" class="s">bus watchdog (timeout)</text>
+
+  <rect x="270" y="250" width="140" height="60" class="sub"/>
+  <text x="340" y="265" text-anchor="middle" class="t">u_ram</text>
+  <text x="340" y="278" text-anchor="middle" class="s">64 B ECC RAM</text>
+  <text x="340" y="290" text-anchor="middle" class="s">SECDED 39/32</text>
+
+  <rect x="110" y="330" width="140" height="70" class="sub"/>
+  <text x="180" y="345" text-anchor="middle" class="t">u_uart</text>
+  <text x="180" y="358" text-anchor="middle" class="s">RX/TX registers</text>
+  <text x="180" y="370" text-anchor="middle" class="s">TMR BAUD divisor</text>
+  <text x="180" y="382" text-anchor="middle" class="s">(a hit cannot kill link)</text>
+
+  <rect x="270" y="330" width="140" height="70" class="sub"/>
+  <text x="340" y="345" text-anchor="middle" class="t">firmware view</text>
+  <text x="340" y="358" text-anchor="middle" class="s">echo b+1, counters,</text>
+  <text x="340" y="370" text-anchor="middle" class="s">inject 0-4, env T/S/B/E,</text>
+  <text x="340" y="382" text-anchor="middle" class="s">links k/K/w/W, 'R' sum</text>
+
+  <path d="M250 195 L270 195" class="w"/>
+  <path d="M180 230 L180 250" class="w"/>
+  <path d="M250 280 L270 280" class="w"/>
+  <path d="M180 310 L180 330" class="w"/>
+  <path d="M85 146 L110 146 L110 160" class="w"/>
+
+  <!-- ==================== u_hk group ==================== -->
+  <rect x="455" y="130" width="250" height="330" class="grp"/>
+  <text x="465" y="146" class="h">u_hk - monitor + housekeeping</text>
+
+  <rect x="470" y="160" width="100" height="60" class="sub"/>
+  <text x="520" y="175" text-anchor="middle" class="t">ring PLAIN</text>
+  <text x="520" y="188" text-anchor="middle" class="s">unprotected</text>
+  <text x="520" y="200" text-anchor="middle" class="s">reference N=64</text>
+
+  <rect x="585" y="160" width="105" height="60" class="sub"/>
+  <text x="637" y="175" text-anchor="middle" class="t">ring TMR A</text>
+  <text x="637" y="188" text-anchor="middle" class="s">zirh_tmr_ff32 macros</text>
+  <text x="637" y="200" text-anchor="middle" class="s">680-1380 um apart</text>
+
+  <rect x="470" y="235" width="100" height="60" class="sub"/>
+  <text x="520" y="250" text-anchor="middle" class="t">ring TMR B</text>
+  <text x="520" y="263" text-anchor="middle" class="s">identical logic,</text>
+  <text x="520" y="275" text-anchor="middle" class="s">tool-placed control</text>
+
+  <rect x="585" y="235" width="105" height="60" class="sub"/>
+  <text x="637" y="250" text-anchor="middle" class="t">beam counters</text>
+  <text x="637" y="263" text-anchor="middle" class="s">PLAIN RAW_A ESC_A</text>
+  <text x="637" y="275" text-anchor="middle" class="s">RAW_B ESC_B (TMR)</text>
+
+  <rect x="470" y="310" width="220" height="60" class="sub"/>
+  <text x="580" y="325" text-anchor="middle" class="t">housekeeping islands (all TMR)</text>
+  <text x="580" y="338" text-anchor="middle" class="s">mode phase warm boot wd</text>
+  <text x="580" y="350" text-anchor="middle" class="s">ecc_c ecc_u busto ferr counters</text>
+
+  <rect x="470" y="385" width="220" height="55" class="sub"/>
+  <text x="580" y="400" text-anchor="middle" class="t">CPU watchdog</text>
+  <text x="580" y="413" text-anchor="middle" class="s">signature stalls -> chip reset,</text>
+  <text x="580" y="425" text-anchor="middle" class="s">BOOT counter increments</text>
+
+  <path d="M570 190 L585 190" class="w"/>
+  <path d="M570 265 L585 265" class="w"/>
+  <path d="M637 220 L637 235" class="w"/>
+
+  <!-- ==================== u_env group ==================== -->
+  <rect x="725" y="130" width="215" height="200" class="grp"/>
+  <text x="735" y="146" class="h">u_env - environment</text>
+
+  <rect x="740" y="160" width="185" height="45" class="sub"/>
+  <text x="832" y="175" text-anchor="middle" class="t">u_ro - TID dosimeter</text>
+  <text x="832" y="188" text-anchor="middle" class="s">ring oscillator + window count</text>
+
+  <rect x="740" y="215" width="185" height="45" class="sub"/>
+  <text x="832" y="230" text-anchor="middle" class="t">u_set - SET catcher</text>
+  <text x="832" y="243" text-anchor="middle" class="s">pulse chain + count (TMR)</text>
+
+  <rect x="740" y="270" width="185" height="45" class="sub"/>
+  <text x="832" y="285" text-anchor="middle" class="t">burst correlator</text>
+  <text x="832" y="298" text-anchor="middle" class="s">MBU/pile-up separation (TMR)</text>
+
+  <!-- ==================== telemetry ==================== -->
+  <rect x="455" y="480" width="250" height="80" class="blk"/>
+  <text x="580" y="496" text-anchor="middle" class="t">u_tlm (v2 telemetry)</text>
+  <text x="580" y="509" text-anchor="middle" class="s">0x5A 0x33 + 18 bytes, XOR checksum</text>
+  <text x="580" y="521" text-anchor="middle" class="s">every 65536 cycles: counters, env,</text>
+  <text x="580" y="533" text-anchor="middle" class="s">CPU signature - CPU cannot block it</text>
+  <text x="580" y="551" text-anchor="middle" class="s">line shared with firmware TX (mux)</text>
+
+  <rect x="725" y="480" width="215" height="80" class="blk"/>
+  <text x="832" y="496" text-anchor="middle" class="t">u_mirror (TLM_MIRROR)</text>
+  <text x="832" y="509" text-anchor="middle" class="s">second voice: frames only,</text>
+  <text x="832" y="521" text-anchor="middle" class="s">own serializer, own pin -</text>
+  <text x="832" y="533" text-anchor="middle" class="s">survives a flooded or hijacked</text>
+  <text x="832" y="545" text-anchor="middle" class="s">primary UART</text>
+
+  <!-- ==================== u_ifc ==================== -->
+  <rect x="95" y="480" width="330" height="120" class="grp"/>
+  <text x="105" y="496" class="h">u_ifc - interface experiments</text>
+
+  <rect x="110" y="505" width="140" height="80" class="sub"/>
+  <text x="180" y="520" text-anchor="middle" class="t">u_can (CAN-lite)</text>
+  <text x="180" y="533" text-anchor="middle" class="s">beacon TX + RX + ACK</text>
+  <text x="180" y="545" text-anchor="middle" class="s">wired-AND drive, TMR</text>
+  <text x="180" y="557" text-anchor="middle" class="s">state, error counters,</text>
+  <text x="180" y="569" text-anchor="middle" class="s">golden-model verified</text>
+
+  <rect x="270" y="505" width="140" height="80" class="sub"/>
+  <text x="340" y="520" text-anchor="middle" class="t">u_spw (SpaceWire-lite)</text>
+  <text x="340" y="533" text-anchor="middle" class="s">data/strobe link, Run</text>
+  <text x="340" y="545" text-anchor="middle" class="s">state machine, char</text>
+  <text x="340" y="557" text-anchor="middle" class="s">round-trip, TMR state,</text>
+  <text x="340" y="569" text-anchor="middle" class="s">golden-model verified</text>
+
+  <!-- ==================== wires ==================== -->
+  <!-- uart rx to soc -->
+  <path d="M85 146 L95 146" class="w"/>
+  <!-- soc to tlm (signature, counters read) -->
+  <path d="M425 370 L455 500 " class="w"/>
+  <!-- hk to tlm -->
+  <path d="M580 460 L580 480" class="w"/>
+  <!-- env to tlm -->
+  <path d="M832 330 L832 420 L705 500" class="w"/>
+  <!-- tlm to mirror -->
+  <path d="M705 520 L725 520" class="w"/>
+  <!-- ifc pins -->
+  <path d="M85 556 L110 556 M85 576 L270 576 M85 596 L270 582" class="w"/>
+
+  <!-- ==================== right: outputs ==================== -->
+  <text x="948" y="66"  text-anchor="end" class="pin">uo[0] HEARTBEAT</text>
+  <text x="948" y="86"  text-anchor="end" class="pin">uo[1] CPU_ALIVE</text>
+  <text x="948" y="106" text-anchor="end" class="pin">uo[2] SEU_EVT</text>
+  <text x="948" y="126" text-anchor="end" class="pin">uo[3] ERR_TMR</text>
+  <text x="948" y="360" text-anchor="end" class="pin">uo[5] ECC_EVT</text>
+  <text x="948" y="380" text-anchor="end" class="pin">uo[6] BUS_TIMEOUT</text>
+  <text x="948" y="400" text-anchor="end" class="pin">uo[7] ARMED</text>
+  <text x="948" y="470" text-anchor="end" class="pin">uo[4] UART_TX</text>
+  <text x="948" y="590" text-anchor="end" class="pin">uio[7] TLM_MIRROR</text>
+  <text x="948" y="620" text-anchor="end" class="pin">uio[1] CAN_TX</text>
+  <text x="948" y="640" text-anchor="end" class="pin">uio[4] SPW_DOUT</text>
+  <text x="948" y="660" text-anchor="end" class="pin">uio[5] SPW_SOUT</text>
+
+  <path d="M245 62 L940 62" class="w"/>
+  <path d="M425 180 L860 82 L862 82" class="w"/>
+  <path d="M705 190 L940 102" class="we"/>
+  <path d="M705 340 L940 122" class="we"/>
+  <path d="M425 285 L940 356" class="we"/>
+  <path d="M250 300 L425 300 L940 376" class="we"/>
+  <path d="M705 430 L940 396" class="w"/>
+  <path d="M705 540 L940 466" class="w"/>
+  <path d="M832 560 L832 582 L935 582" class="w"/>
+  <path d="M250 616 L940 616 M410 636 L940 636 M410 656 L940 656" class="w"/>
+  <path d="M180 585 L180 616 L250 616" class="w"/>
+  <path d="M340 585 L340 636 L410 636" class="w"/>
+  <path d="M360 585 L360 656 L410 656" class="w"/>
+
+  <text x="480" y="688" text-anchor="middle" class="s">Placement experiment: ring TMR A replicas are macro-bound 680-1380 um apart at hardening; ring TMR B is the tool-placed control (closest same-bit pair 3.78 um). ESCAPE(A) vs ESCAPE(B) under beam is the registered prediction.</text>
+</svg>

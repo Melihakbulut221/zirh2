@@ -30,6 +30,11 @@ wedged peripheral costs an event, not the CPU.
 
 ## Block diagram
 
+A detailed instance-level diagram - every RTL instance, the full pin
+map and the event paths - is at
+[docs/fig/block_diagram_detailed.svg](docs/fig/block_diagram_detailed.svg).
+The short form:
+
 ```
                 ui[3] UART_RX
                      |
