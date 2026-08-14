@@ -70,8 +70,8 @@
   <text x="351" y="232" text-anchor="middle" class="btitle mono">u_rom</text>
   <text x="351" y="247" text-anchor="middle" class="btext">mask ROM, 256 words</text>
   <text x="351" y="260" text-anchor="middle" class="btext">golden firmware, pipelined</text>
-  <text x="351" y="273" text-anchor="middle" class="btext">fetch, XOR checksum</text>
-  <text x="351" y="290" text-anchor="middle" class="btext">answered on 'R'</text>
+  <text x="351" y="273" text-anchor="middle" class="btext">fetch, XOR checksum on 'R'</text>
+  <text x="351" y="290" text-anchor="middle" class="btext" font-style="italic">no ISP: fixed at tape-out</text>
 
   <rect x="86" y="316" width="165" height="70" rx="7" fill="#ffffff" stroke="#7b9bd2" stroke-width="1.2"/>
   <text x="168" y="334" text-anchor="middle" class="btitle mono">u_bus</text>
@@ -271,6 +271,7 @@
   <path d="M405 684 L405 710" class="wire" marker-end="url(#arr)"/>
 
   <!-- footnote -->
-  <text x="520" y="772" text-anchor="middle" class="note">The placement experiment: ring TMR A's replicas are macro-bound 680-1380 um apart; ring TMR B is the tool-placed control.</text>
-  <text x="520" y="788" text-anchor="middle" class="note">ESCAPE(A) vs ESCAPE(B) under beam is the registered, falsifiable prediction (docs/PREDICTION.md).</text>
+  <text x="520" y="766" text-anchor="middle" class="note">The placement experiment: ring TMR A's replicas are macro-bound 680-1380 um apart; ring TMR B is the tool-placed control.</text>
+  <text x="520" y="780" text-anchor="middle" class="note">ESCAPE(A) vs ESCAPE(B) under beam is the registered, falsifiable prediction (docs/PREDICTION.md).</text>
+  <text x="520" y="794" text-anchor="middle" class="note">Deliberately absent: programming/debug (boot loader, QSPI-MRAM, debug module) - built and verified for the next chip (docs/ZIRH3-SCOPE.md); an experiment die carries no unnecessary input paths.</text>
 </svg>
