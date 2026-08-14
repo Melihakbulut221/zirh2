@@ -66,6 +66,7 @@ module zirh_boot_ctrl #(
 );
 
     localparam MAGIC = 32'h5A495248;
+    localparam integer IDXW = $clog2(BANK_WORDS);
 
     // --- CRC32 (IEEE 802.3 reflected, init/xorout all-ones) -----------------
     function [31:0] crc32_byte;
@@ -116,32 +117,30 @@ module zirh_boot_ctrl #(
     // load-path working set
     wire [1:0]  strap_q;
     wire        tgt_q;          // bank being loaded
-    wire [15:0] hlen_q, hver_q;
+    wire [15:0] hlen_q;
     wire [31:0] hcrc_q, crc_q, word_q;
-    wire [9:0]  idx_q;
+    wire [IDXW-1:0] idx_q;
     wire [3:0]  bcnt_q;
     reg  [1:0]  strap_d;
     reg         tgt_d;
-    reg  [15:0] hlen_d, hver_d;
+    reg  [15:0] hlen_d;
     reg  [31:0] hcrc_d, crc_d, word_d;
-    reg  [9:0]  idx_d;
+    reg  [IDXW-1:0] idx_d;
     reg  [3:0]  bcnt_d;
-    wire e7, e8, e9, e10, e11, e12, e13, e14;
+    wire e7, e8, e9, e11, e12, e13, e14;
     zirh_boot_reg #(.WIDTH(2), .PROTECT(PROTECT))  u_strap (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(strap_d), .q_o(strap_q), .err_o(e7));
     zirh_boot_reg #(.WIDTH(1), .PROTECT(PROTECT))  u_tgt  (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(tgt_d), .q_o(tgt_q), .err_o(e8));
     zirh_boot_reg #(.WIDTH(16), .PROTECT(PROTECT)) u_hlen (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(hlen_d), .q_o(hlen_q), .err_o(e9));
-    zirh_boot_reg #(.WIDTH(16), .PROTECT(PROTECT)) u_hver (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
-        .d_i(hver_d), .q_o(hver_q), .err_o(e10));
     zirh_boot_reg #(.WIDTH(32), .PROTECT(PROTECT)) u_hcrc (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(hcrc_d), .q_o(hcrc_q), .err_o(e11));
     zirh_boot_reg #(.WIDTH(32), .PROTECT(PROTECT)) u_crc  (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(crc_d), .q_o(crc_q), .err_o(e12));
     zirh_boot_reg #(.WIDTH(32), .PROTECT(PROTECT)) u_word (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(word_d), .q_o(word_q), .err_o(e13));
-    zirh_boot_reg #(.WIDTH(10), .PROTECT(PROTECT)) u_idx  (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
+    zirh_boot_reg #(.WIDTH(IDXW), .PROTECT(PROTECT)) u_idx  (.clk(clk), .rst_n(rst_n), .en_i(1'b1),
         .d_i(idx_d), .q_o(idx_q), .err_o(e14));
     // byte counter is small and self-healing through the flow; TMR too
     wire e15;
@@ -149,7 +148,7 @@ module zirh_boot_ctrl #(
         .d_i(bcnt_d), .q_o(bcnt_q), .err_o(e15));
 
     assign err_o = state_err | e1 | e2 | e3 | e4 | e5 | e6 | e7 | e8
-                 | e9 | e10 | e11 | e12 | e13 | e14 | e15;
+                 | e9 | e11 | e12 | e13 | e14 | e15;
 
     // --- bus mastering ------------------------------------------------------
     // sub-phase: in LOAD, a completed word issues one write; in VERIFY,
@@ -162,7 +161,8 @@ module zirh_boot_ctrl #(
     assign m_cyc_o = wr_go | rd_go;
     assign m_we_o  = wr_go;
     assign m_dat_o = word_q;
-    assign m_adr_o = {20'h0, {tgt_q ? BANK_WORDS[9:0] : 10'd0} | idx_q, 2'b00};
+    wire [9:0] idx_w = {{(10-IDXW){1'b0}}, idx_q};
+    assign m_adr_o = {20'h0, {tgt_q ? BANK_WORDS[9:0] : 10'd0} | idx_w, 2'b00};
 
     // stream accepted only while collecting header or payload bytes
     assign st_ready_o = ((state_q == S_HDR) & (bcnt_q < 4'd12))
@@ -184,7 +184,7 @@ module zirh_boot_ctrl #(
         pref_d  = pref_q;  va_d = va_q;  vb_d = vb_q;
         sa_d    = sa_q;    sb_d = sb_q;  sel_d = sel_q;
         strap_d = strap_q; tgt_d = tgt_q;
-        hlen_d  = hlen_q;  hver_d = hver_q; hcrc_d = hcrc_q;
+        hlen_d  = hlen_q;  hcrc_d = hcrc_q;
         crc_d   = crc_q;   word_d = word_q;
         idx_d   = idx_q;   bcnt_d = bcnt_q;
         evt_accept_o = 1'b0;
@@ -195,7 +195,7 @@ module zirh_boot_ctrl #(
                 strap_d = strap_i;
                 sel_d   = 1'b0;
                 bcnt_d  = 4'd0;
-                idx_d   = 10'd0;
+                idx_d   = {IDXW{1'b0}};
                 crc_d   = 32'hFFFFFFFF;
                 case (strap_i)
                     2'b00: state_d = S_GOLDEN;
@@ -217,8 +217,8 @@ module zirh_boot_ctrl #(
                         4'd3:  word_d[31:24] = st_data_i;
                         4'd4:  hlen_d[7:0]   = st_data_i;
                         4'd5:  hlen_d[15:8]  = st_data_i;
-                        4'd6:  hver_d[7:0]   = st_data_i;
-                        4'd7:  hver_d[15:8]  = st_data_i;
+                        4'd6:  ;   // version: parsed, not stored -
+                        4'd7:  ;   // no decision ever reads it
                         4'd8:  hcrc_d[7:0]   = st_data_i;
                         4'd9:  hcrc_d[15:8]  = st_data_i;
                         4'd10: hcrc_d[23:16] = st_data_i;
@@ -254,9 +254,9 @@ module zirh_boot_ctrl #(
                 end
                 if (wr_go & m_ack_i) begin
                     bcnt_d = 4'd0;
-                    idx_d  = idx_q + 10'd1;
-                    if (idx_q == {6'h0, hlen_q[9:0]} - 10'd1) begin
-                        idx_d   = 10'd0;
+                    idx_d  = idx_q + 1'b1;
+                    if (idx_q == hlen_q[IDXW-1:0] - 1'b1) begin
+                        idx_d   = {IDXW{1'b0}};
                         state_d = S_VERIFY;
                     end
                 end
@@ -269,13 +269,13 @@ module zirh_boot_ctrl #(
                     crc_d = crc32_byte(crc32_byte(crc32_byte(crc32_byte(
                                 crc_q, m_rdt_i[7:0]), m_rdt_i[15:8]),
                                 m_rdt_i[23:16]), m_rdt_i[31:24]);
-                    idx_d = idx_q + 10'd1;
-                    if (idx_q == {6'h0, hlen_q[9:0]} - 10'd1)
+                    idx_d = idx_q + 1'b1;
+                    if (idx_q == hlen_q[IDXW-1:0] - 1'b1)
                         bcnt_d = 4'd1;          // all words folded
                 end
                 if (bcnt_q == 4'd1) begin
                     bcnt_d = 4'd0;
-                    idx_d  = 10'd0;
+                    idx_d  = {IDXW{1'b0}};
                     if (((crc_q ^ 32'hFFFFFFFF) == hcrc_q) & sig_ok_i) begin
                         evt_accept_o = 1'b1;
                         if (tgt_q) begin vb_d = 1'b1; sb_d = 1'b0; end
@@ -312,7 +312,7 @@ module zirh_boot_ctrl #(
                     // into the inactive bank (the running one is live)
                     tgt_d   = ~pref_q;
                     bcnt_d  = 4'd0;
-                    idx_d   = 10'd0;
+                    idx_d   = {IDXW{1'b0}};
                     crc_d   = 32'hFFFFFFFF;
                     state_d = S_HDR;
                 end
@@ -343,8 +343,6 @@ module zirh_boot_ctrl #(
     `ZIRH_ASSERT(a_state_legal, state_q <= S_RUN)
     `ZIRH_ASSERT(a_sel_implies_valid,
                  !sel_q || (pref_q ? vb_q : va_q))
-
-    wire _unused = &{hver_q, 1'b0};
 
 endmodule
 

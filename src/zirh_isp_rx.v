@@ -24,7 +24,7 @@ module zirh_isp_rx #(
     output reg        valid_o             // 1-cycle pulse per byte
 );
 
-    localparam integer CW = 9;            // enough for DIV up to 511
+    localparam integer CW = 8;            // enough for DIV up to 255
 
     // 2FF synchronizer - rx_i is a pad
     reg [1:0] sync_q;
