@@ -51,6 +51,8 @@ project:
     - "zirh_spw.v"
     - "zirh_ifc.v"
     - "zirh_tlm_mirror.v"
+    - "zirh_boot_ctrl.v"
+    - "zirh_isp_rx.v"
     - "tt_um_hma_zirh2.v"
 
 # Frozen 2026-08-07, rationale in docs/ZIRH2-PINMAP.md.

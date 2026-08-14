@@ -336,7 +336,9 @@ that closed it:
   word, address-in-ECC, scrubber), formal/f_ecc + f_amask,
   test/test_sram39.py
 - A5/F25/F26 boot and update: src/zirh_boot_ctrl.v + src/zirh_qspi.v,
-  docs/BOOT.md, ISP + A/B revert ladder proven in simulation
+  docs/BOOT.md, ISP + A/B revert ladder proven in simulation - and
+  F25's UART-host configuration now integrated ON ZIRH-2 itself
+  (ui[2] strap, ECC-bank execution, ROM fallback; test/test_isp.py)
 - A6 SRAM DUT experiment: designed into the BIST engine
   (src/zirh_sram_bist.v pattern modes) and the campaign plans
 - B7/B8/B9 campaign engineering: docs/BEAM-PLAN.md,

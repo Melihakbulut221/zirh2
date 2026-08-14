@@ -42,6 +42,9 @@
     <text x="8" y="232" class="pinlbl">UART_RX</text>
     <rect x="8" y="236" width="52" height="18" rx="9" fill="#1f5f8b"/>
     <text x="34" y="249" text-anchor="middle" class="pin">ui[3]</text>
+    <text x="8" y="278" class="pinlbl">BOOT_STRAP</text>
+    <rect x="8" y="282" width="52" height="18" rx="9" fill="#8c2f23"/>
+    <text x="34" y="295" text-anchor="middle" class="pin">ui[2]</text>
     <text x="8" y="596" class="pinlbl">CAN_RX</text>
     <rect x="8" y="600" width="52" height="18" rx="9" fill="#1f7a7a"/>
     <text x="34" y="613" text-anchor="middle" class="pin">uio[0]</text>
@@ -54,6 +57,14 @@
   </g>
   <path d="M54 93 L70 93" class="wire" marker-end="url(#arr)"/>
   <path d="M54 117 L70 117" class="wire" marker-end="url(#arr)"/>
+
+  <!-- ================= ISP loader ================= -->
+  <rect x="290" y="76" width="160" height="72" rx="9" fill="#fdeaea" stroke="#a03c3c" stroke-width="1.4"/>
+  <text x="370" y="93" text-anchor="middle" class="btitle mono">u_boot + u_isp_rx</text>
+  <text x="370" y="107" text-anchor="middle" class="btext">ISP: ui[2] strap + UART image</text>
+  <text x="370" y="119" text-anchor="middle" class="btext">CRC32 read-back verify -> run</text>
+  <text x="370" y="131" text-anchor="middle" class="btext">from bank; refuse -> mask ROM</text>
+  <text x="370" y="143" text-anchor="middle" class="btext">(TMR loader, POR domain)</text>
 
   <!-- ================= SoC group ================= -->
   <rect x="70" y="180" width="380" height="360" rx="12" fill="#e9f0fb" stroke="#3b6fc9" stroke-width="1.8"/>
@@ -71,7 +82,7 @@
   <text x="351" y="247" text-anchor="middle" class="btext">mask ROM, 256 words</text>
   <text x="351" y="260" text-anchor="middle" class="btext">golden firmware, pipelined</text>
   <text x="351" y="273" text-anchor="middle" class="btext">fetch, XOR checksum on 'R'</text>
-  <text x="351" y="290" text-anchor="middle" class="btext" font-style="italic">no ISP: fixed at tape-out</text>
+  <text x="351" y="290" text-anchor="middle" class="btext" font-style="italic">immutable golden copy</text>
 
   <rect x="86" y="316" width="165" height="70" rx="7" fill="#ffffff" stroke="#7b9bd2" stroke-width="1.2"/>
   <text x="168" y="334" text-anchor="middle" class="btitle mono">u_bus</text>
@@ -104,6 +115,10 @@
   <path d="M251 351 L269 351" class="wire" marker-end="url(#arr)" marker-start="url(#arr)"/>
   <path d="M168 386 L168 400" class="wire" marker-end="url(#arr)" marker-start="url(#arr)"/>
   <path d="M60 245 L74 245 L74 430 L86 430" class="wire" marker-end="url(#arr)"/>
+  <!-- ISP: strap + rx feed the loader; the loader writes the bank -->
+  <path d="M60 291 L66 291 L66 160 L280 160 L280 112 L290 112" class="wire" marker-end="url(#arr)"/>
+  <path d="M340 148 L340 160 L442 160 L442 351 L434 351" class="wire" marker-end="url(#arr)"/>
+  <text x="446" y="250" class="pinlbl" transform="rotate(90 446 250)">image into bank</text>
   <path d="M170 148 L170 180" class="wire" marker-end="url(#arr)"/>
 
   <!-- ================= HK group ================= -->
@@ -247,10 +262,10 @@
     <text x="405" y="723" text-anchor="middle" class="pin">uio[5] SPW_SOUT</text>
   </g>
 
-  <!-- heartbeat: clk_rst across the top -->
-  <path d="M270 93 L936 93" class="wire" marker-end="url(#arr)"/>
-  <!-- cpu_alive: out the top of the soc, along the clear lane above the groups -->
-  <path d="M430 180 L430 117 L936 117" class="wire" marker-end="url(#arr)"/>
+  <!-- heartbeat: clk_rst up and over the ISP card -->
+  <path d="M270 93 L278 93 L278 68 L926 68 L926 93 L936 93" class="wire" marker-end="url(#arr)"/>
+  <!-- cpu_alive: out the top of the soc, through the gap right of the ISP card -->
+  <path d="M430 180 L430 158 L460 158 L460 117 L936 117" class="wire" marker-end="url(#arr)"/>
   <!-- SEU event: out the top of hk, same lane -->
   <path d="M683 180 L683 141 L936 141" class="ewire" marker-end="url(#arrE)"/>
   <!-- ERR_TMR: any replica mismatch, out the top of hk -->
@@ -273,5 +288,5 @@
   <!-- footnote -->
   <text x="520" y="766" text-anchor="middle" class="note">The placement experiment: ring TMR A's replicas are macro-bound 680-1380 um apart; ring TMR B is the tool-placed control.</text>
   <text x="520" y="780" text-anchor="middle" class="note">ESCAPE(A) vs ESCAPE(B) under beam is the registered, falsifiable prediction (docs/PREDICTION.md).</text>
-  <text x="520" y="794" text-anchor="middle" class="note">Deliberately absent: programming/debug (boot loader, QSPI-MRAM, debug module) - built and verified for the next chip (docs/ZIRH3-SCOPE.md); an experiment die carries no unnecessary input paths.</text>
+  <text x="520" y="794" text-anchor="middle" class="note">Programming: the ISP loader runs code written after tape-out (test/test_isp.py). Still deliberately absent: QSPI-MRAM and the debug module - built and verified for the next chip (docs/ZIRH3-SCOPE.md).</text>
 </svg>

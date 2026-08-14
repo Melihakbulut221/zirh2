@@ -302,3 +302,16 @@ requirements:
     evidence: sdf.yaml three-corner matrix per hardening release;
       the SDF-support micro-experiment recorded in ROADMAP Cycle 26
 
+  - id: R29
+    text: The chip shall accept a CRC32-sealed firmware image over UART
+      when strapped for ISP, verify the STORED image by read-back
+      before running it, run it from the ECC-protected bank, and fall
+      back to the mask ROM on any refused image or on a watchdog-failed
+      bank - a half-load or a corrupt load must never brick the chip
+      or leave it silent.
+    tests:
+      - test/test_isp.py
+      - test/sv/zirh_boot_scenarios_tb.sv
+    evidence: test.yaml (cocotb suite; commit, corrupt-CRC refusal,
+      bad-magic refusal, ROM fallback sign-on) and the boot-controller
+      SV scenario suite including the lying-memory storage_lie case

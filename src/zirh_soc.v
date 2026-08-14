@@ -41,6 +41,24 @@ module zirh_soc #(
     input  wire       clk,
     input  wire       rst_n,
 
+    // POR-domain reset for the ECC RAM only: the loaded bank must
+    // survive both the ISP hold and watchdog reboots (the loader and
+    // its bank live across everything short of a power cycle)
+    input  wire       por_rst_n_i,
+
+    // ISP loader port (top-level zirh_boot_ctrl, POR domain). While
+    // isp_hold_i the loader owns the ECC RAM and the rest of the SoC
+    // is held in reset by the top; with boot_sel_i the CPU fetches
+    // from the loaded bank instead of the mask ROM.
+    input  wire        isp_hold_i,
+    input  wire        boot_sel_i,
+    input  wire        isp_cyc_i,
+    input  wire [31:0] isp_adr_i,
+    input  wire [31:0] isp_dat_i,
+    input  wire        isp_we_i,
+    output wire [31:0] isp_rdt_o,
+    output wire        isp_ack_o,
+
     // UART pins
     output wire       uart_tx_o,
     input  wire       uart_rx_i,
@@ -105,15 +123,31 @@ module zirh_soc #(
     wire        rom_dbus_ack;
     wire        rom_dbus_cyc;
 
+    wire [31:0] rom_i_rdt;
+
     zirh_rom #(.HEX(ROM_HEX)) u_rom (
         .clk     (clk),
         .i_adr_i (ibus_adr),
-        .i_rdt_o (ibus_rdt),
+        .i_rdt_o (rom_i_rdt),
         .cyc_i   (rom_dbus_cyc),
         .adr_i   (dbus_adr),
         .rdt_o   (rom_dbus_rdt),
         .ack_o   (rom_dbus_ack)
     );
+
+    // Fetch source select: the mask ROM always, or the loaded bank when
+    // the ISP controller has committed an image. Bank fetches go through
+    // the ECC RAM's corrected read port, so a fetched word is scrubbed
+    // and counted exactly like a data read.
+    wire [31:0] ram_rdt;
+    wire        ram_ack;
+
+    wire fetch_ram = boot_sel_i & ibus_cyc & ~s_cyc[1] & ~ibus_ack;
+
+    // both fetch sources answer combinationally (ROM decode, RAM
+    // corrected read), so the registered one-wait ibus ack works
+    // unchanged for either
+    assign ibus_rdt = boot_sel_i ? ram_rdt : rom_i_rdt;
 
     always @(posedge clk) begin
         if (!rst_n) ibus_ack <= 1'b0;
@@ -181,21 +215,39 @@ module zirh_soc #(
     assign s_rdt[31:0]  = rom_dbus_rdt;
     assign s_ack[0]     = rom_dbus_ack;
 
-    // slot 1: ECC RAM
+    // slot 1: ECC RAM - three masters, one port, no overlap by
+    // construction: the ISP loader owns it while the CPU is held;
+    // afterwards the CPU's dbus and (when running from the bank) its
+    // fetch path share it, and SERV never has both in flight at once.
+    // The RAM lives on the POR reset so the loaded image survives both
+    // the ISP hold and watchdog reboots.
     wire evt_corr, evt_uncorr;
+
+    wire        ram_cyc = isp_hold_i ? isp_cyc_i
+                                     : (s_cyc[1] | fetch_ram);
+    wire [31:0] ram_adr = isp_hold_i ? isp_adr_i
+                                     : (s_cyc[1] ? s_adr : ibus_adr);
+    wire [31:0] ram_dat = isp_hold_i ? isp_dat_i : s_dat;
+    wire [3:0]  ram_sel = (isp_hold_i | ~s_cyc[1]) ? 4'hF : s_sel;
+    wire        ram_we  = isp_hold_i ? isp_we_i : (s_cyc[1] & s_we);
+
     zirh_ecc_ram u_ram (
         .clk          (clk),
-        .rst_n        (rst_n),
-        .cyc_i        (s_cyc[1]),
-        .adr_i        (s_adr),
-        .dat_i        (s_dat),
-        .sel_i        (s_sel),
-        .we_i         (s_we),
-        .rdt_o        (s_rdt[63:32]),
-        .ack_o        (s_ack[1]),
+        .rst_n        (por_rst_n_i),
+        .cyc_i        (ram_cyc),
+        .adr_i        (ram_adr),
+        .dat_i        (ram_dat),
+        .sel_i        (ram_sel),
+        .we_i         (ram_we),
+        .rdt_o        (ram_rdt),
+        .ack_o        (ram_ack),
         .evt_corr_o   (evt_corr),
         .evt_uncorr_o (evt_uncorr)
     );
+    assign s_rdt[63:32] = ram_rdt;
+    assign s_ack[1]     = ram_ack & s_cyc[1] & ~isp_hold_i;
+    assign isp_rdt_o    = ram_rdt;
+    assign isp_ack_o    = ram_ack & isp_hold_i;
     assign evt_ecc_corr_o   = evt_corr;
     assign evt_ecc_uncorr_o = evt_uncorr;
 

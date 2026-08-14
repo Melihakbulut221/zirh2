@@ -517,3 +517,39 @@ this repository exactly - so the ZIRH-3 dedicated-design rehearsal
 (pad ring, guard rings, POR, SRAM macros, the whole obstacle-2 list)
 waits behind the data-discipline gate, not the money gate. The
 sellable part keeps its paid EUROPRACTICE path clean.
+
+## Cycle 29 (2026-08-16): the chip learns to run new code
+
+The owner's instruction was direct - add a programming interface -
+and the honest half of the answer came first: SG13G2 cannot carry
+flash (no such process module exists in the open PDK, and floating
+gates are the worst radiation choice anyway), and the TT pin budget
+leaves one spare bidirectional pin, which is not a QSPI. So the
+"flash" stays on the host side, and the die gets what physics
+allows: the F25 boot controller, already proven standalone and in
+the SV storage_lie scenario, now lives ON THIS CHIP in its UART-host
+configuration. ui[2] high at power-up straps the loader: a
+MAGIC/len/version/CRC32 image streams in at the reset baud through
+the loader's own receiver while the whole SoC - its UART included -
+is held in reset; the STORED words are re-read and CRC'd; only a
+verified bank releases the CPU, whose fetch path now muxes between
+mask ROM and the ECC-protected bank. A refused image, and a running
+bank the watchdog fails before it ever signs on, falls back to the
+immutable ROM - grace-gated by one full watchdog period so a
+starvation pulse left over from the load window cannot fail a bank
+that never had a chance.
+
+The bank fetch rides the corrected read port, so fetched
+instructions are scrubbed and counted like data. The ECC RAM moved
+to the POR reset domain: the loaded image survives watchdog reboots,
+so a wd reset of a loaded program is a warm restart of THAT program,
+not a fallback. The proof is test/test_isp.py, which carries its own
+three-format assembler and a five-instruction flight program - the
+point of an ISP is that firmware is data, so the testbench writes
+firmware: streams it, watches the loader commit, and asserts the
+LOADED loop's signature marching through telemetry; then streams the
+same image with a wrong CRC and a wrong magic and watches the ROM
+come back instead. Debug lesson of the cycle: the program wrote its
+signature to the wrong register offset for a while, and every layer
+below it - loader, CRC, fetch mux, bus - was proven innocent one
+probe at a time before the five-line firmware confessed.

@@ -88,7 +88,82 @@ module tt_um_hma_zirh2 #(
   // clk_rst never see it, so telemetry keeps flowing across a reboot and
   // the BOOT field counts it.
   wire wd_rst;
-  wire soc_rst_n = rst_n_sys & ~wd_rst;
+
+  // --- ISP: the programming interface (PROGRAM.md F25 on this die) ----------
+  // ui[2] high at power-up straps the loader into host mode: the boot
+  // controller takes UART bytes at the RESET baud through its own
+  // receiver (the SoC, its UART included, is held in reset), streams a
+  // MAGIC/len/version/CRC32 image into the ECC RAM bank, re-reads the
+  // STORED words to check the CRC, and only then releases the CPU to
+  // fetch from the bank. A refused image - and a running image the
+  // watchdog fails before it ever signs on - falls back to the mask
+  // ROM. The transport is unprotected on purpose: the read-back CRC is
+  // the boundary that decides, and the loader itself is TMR throughout.
+  wire        isp_strap = ui_in[2];
+  wire [7:0]  isp_rx_data;
+  wire        isp_rx_valid;
+  wire        bl_cyc, bl_we, bl_sel, bl_bank, bl_acc, bl_rej, bl_err;
+  wire [31:0] bl_adr, bl_dat, bl_rdt;
+  wire        bl_ack;
+  reg         isp_rejected_q;
+  reg  [7:0]  sig_prev_q;
+  reg         signon_seen_q;
+  reg  [WD_LIMIT_LOG2:0] run_age_q;
+
+  wire isp_hold  = isp_strap & ~bl_sel & ~isp_rejected_q;
+  wire soc_rst_n = rst_n_sys & ~wd_rst & ~isp_hold;
+
+  zirh_isp_rx #(.DIV(RESET_DIV)) u_isp_rx (
+      .clk(clk), .rst_n(rst_n_sys), .rx_i(ui_in[3]),
+      .data_o(isp_rx_data), .valid_o(isp_rx_valid));
+
+  // A loaded program signs on by changing the telemetry signature. The
+  // watchdog verdict toward the loader is gated by one full watchdog
+  // period of grace, so a starvation pulse left over from the ISP hold
+  // cannot fail a bank that never had a chance to run. Plain counter on
+  // purpose: a hit here at worst shifts one revert by one period, and
+  // the bank's read-back CRC has already ruled on the contents.
+  wire signon     = bl_sel & (cpu_sig != sig_prev_q);
+  wire wd_verdict = wd_rst & bl_sel &
+                    (signon_seen_q | run_age_q[WD_LIMIT_LOG2]);
+
+  always @(posedge clk) begin
+      if (!rst_n_sys) begin
+          isp_rejected_q <= 1'b0;
+          sig_prev_q     <= 8'h00;
+          signon_seen_q  <= 1'b0;
+          run_age_q      <= {(WD_LIMIT_LOG2+1){1'b0}};
+      end else begin
+          if (bl_rej) isp_rejected_q <= 1'b1;
+          sig_prev_q <= cpu_sig;
+          if (signon) signon_seen_q <= 1'b1;
+          if (bl_sel & ~run_age_q[WD_LIMIT_LOG2])
+              run_age_q <= run_age_q + 1'b1;
+      end
+  end
+
+  zirh_boot_ctrl #(.BANK_WORDS(16)) u_boot (
+      .clk          (clk),
+      .rst_n        (rst_n_sys),
+      .strap_i      ({1'b0, isp_strap}),
+      .st_valid_i   (isp_rx_valid),
+      .st_data_i    (isp_rx_data),
+      .st_ready_o   (),
+      .sig_ok_i     (1'b1),
+      .signon_i     (signon),
+      .wd_fail_i    (wd_verdict),
+      .m_cyc_o      (bl_cyc),
+      .m_adr_o      (bl_adr),
+      .m_dat_o      (bl_dat),
+      .m_we_o       (bl_we),
+      .m_rdt_i      (bl_rdt),
+      .m_ack_i      (bl_ack),
+      .boot_sel_o   (bl_sel),
+      .bank_o       (bl_bank),
+      .evt_accept_o (bl_acc),
+      .evt_reject_o (bl_rej),
+      .err_o        (bl_err)
+  );
 
   zirh_soc #(
       .ROM_HEX   (ROM_HEX),
@@ -96,6 +171,15 @@ module tt_um_hma_zirh2 #(
   ) u_soc (
       .clk               (clk),
       .rst_n             (soc_rst_n),
+      .por_rst_n_i       (rst_n_sys),
+      .isp_hold_i        (isp_hold),
+      .boot_sel_i        (bl_sel),
+      .isp_cyc_i         (bl_cyc),
+      .isp_adr_i         (bl_adr),
+      .isp_dat_i         (bl_dat),
+      .isp_we_i          (bl_we),
+      .isp_rdt_o         (bl_rdt),
+      .isp_ack_o         (bl_ack),
       .uart_tx_o         (uart_tx),
       .uart_rx_i         (ui_in[3]),
       .tlm_data_i        (tlm_data),
@@ -261,7 +345,8 @@ module tt_um_hma_zirh2 #(
     else if (cpu_alive) cpu_alive_tgl <= ~cpu_alive_tgl;
   end
 
-  wire err_any = err_hb | err_soc | err_tlm | hk_infra | err_env | err_ifc;
+  wire err_any = err_hb | err_soc | err_tlm | hk_infra | err_env | err_ifc
+               | bl_err;
 
   assign uo_out = {hk_armed, evt_bus_to, evt_corr | evt_uncorr, uart_tx,
                    err_any, hk_evt, cpu_alive_tgl, heartbeat};
@@ -269,8 +354,9 @@ module tt_um_hma_zirh2 #(
   assign uio_out = {mirror_tx, 1'b0, spw_sout, spw_dout, 1'b0, 1'b0, can_tx, 1'b0};
   assign uio_oe  = 8'b1011_0010;
 
-  wire _unused = &{ena, ui_in[7:4], ui_in[2:0], uio_in[7:6],
-                   uio_in[5:4], uio_in[1], tick16, tick256, 1'b0};
+  wire _unused = &{ena, ui_in[7:4], ui_in[1:0], uio_in[7:6],
+                   uio_in[5:4], uio_in[1], tick16, tick256,
+                   bl_bank, bl_acc, 1'b0};
 `ifdef ZIRH_TWIN_LITE
   wire _unused_lite = &{uio_in[0], uio_in[3:2], 1'b0};
 `endif

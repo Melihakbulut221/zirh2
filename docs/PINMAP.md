@@ -12,7 +12,7 @@ serve both chips.
 |---|---|---|---|
 | ui[0] | - | in | unused, tie low |
 | ui[1] | - | in | unused, tie low |
-| ui[2] | - | in | unused, tie low |
+| ui[2] | BOOT_STRAP | in | high at reset: ISP mode - stream a CRC32-sealed image over UART_RX into the ECC bank; low: golden ROM boot (tie low in legacy setups) |
 | ui[3] | UART_RX | in | command/echo input, idles high (ZIRH-1 position) |
 | ui[4] | - | in | unused, tie low |
 | ui[5] | - | in | unused, tie low |
@@ -37,6 +37,10 @@ serve both chips.
 
 Unused ui pins are deliberately NOT given functions: every input pin is
 an SET path into the die, and the CPU-era chip does not need them.
+BOOT_STRAP is the one exception the program earned: it is sampled once
+after POR and then only gates a TMR'd loader whose failure mode is the
+mask ROM - the cheapest possible surface for what it buys, which is a
+chip that can run code written after tape-out (test/test_isp.py).
 
 REV 2 (2026-08-08): the uio bank, reserved for ZIRH-3 in rev 1, now
 carries the two interface experiments pulled forward from the P1/P2

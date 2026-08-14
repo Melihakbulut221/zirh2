@@ -75,6 +75,8 @@ jobs:
         run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.sram39
       - name: boot controller suite (banks, ISP, revert ladder)
         run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.boot
+      - name: chip-level ISP suite (load, run, refuse, ROM fallback)
+        run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.isp
       - name: BIST engine suite (march, fill, beam scan)
         run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.bist
       - name: debug gate suite (flight lock)

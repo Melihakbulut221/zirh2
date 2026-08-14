@@ -1,0 +1,44 @@
+# =============================================================================
+# ZIRH-2 - the ISP programming interface suite (RTL only)
+#
+#   make -C test -f Makefile.isp
+# =============================================================================
+
+SIM ?= icarus
+TOPLEVEL_LANG ?= verilog
+SRC_DIR = $(PWD)/../src
+
+SIM_BUILD = sim_build/isp
+
+VERILOG_SOURCES += $(wildcard $(SRC_DIR)/serv/serv_*.v)
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_lib.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tmr_ff32.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_clk_rst.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_rom.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_bus.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_ecc_ram.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_rs422.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_uart_regs.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_soc.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_hk.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tlm2.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_env.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_can.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_spw.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_ifc.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_tlm_mirror.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_boot_ctrl.v
+VERILOG_SOURCES += $(SRC_DIR)/zirh_isp_rx.v
+VERILOG_SOURCES += $(SRC_DIR)/tt_um_hma_zirh2.v
+
+TOPLEVEL = tt_um_hma_zirh2
+COCOTB_TEST_MODULES = test_isp
+
+# Keep in sync with test_isp.py
+COMPILE_ARGS += -Ptt_um_hma_zirh2.WD_LIMIT_LOG2=17
+COMPILE_ARGS += -Ptt_um_hma_zirh2.INTERVAL_LOG2=13
+COMPILE_ARGS += -Ptt_um_hma_zirh2.RESET_DIV=20
+COMPILE_ARGS += -I$(SRC_DIR)
+COMPILE_ARGS += -DZIRH_SIM_ENV
+
+include $(shell cocotb-config --makefiles)/Makefile.sim
