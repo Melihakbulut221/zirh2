@@ -20,7 +20,7 @@
 //   cpu_alive         CPU signature nonzero and changing across frames
 //   echo_basic        0x41 comes back 0x42 through RX/bus/firmware/TX
 //   echo_sweep        edge bytes echo, including the frame-sync
-//                     colliding values 0x5A and 0x33
+//                     colliding value 0x5A (0x33 is a command, not echo)
 //   cmd_fuzz          junk command bytes never kill the computer
 //   inject_counters   '1'/'4' land in exactly RAW_A/ESC_B; 'C' wipes
 //   rom_checksum      'R' answers the committed mask's XOR fold
@@ -303,9 +303,12 @@ module zirh_scenarios_tb;
     begin
       cur_scn = "cpu_alive"; chip_boot;
       capture_frame("no first frame");
-      sig1 = frame[16];
+      // CPU signature is frame byte 15 (0x5A 0x33, status, 10 counter
+      // bytes 3..12, 2 ECC bytes 13..14, THEN sig at 15) - byte 16 is
+      // the BOOT count, which stays zero, hence the false "stuck" fail
+      sig1 = frame[15];
       capture_frame("no second frame");
-      sig2 = frame[16];
+      sig2 = frame[15];
       check(sig1 !== 8'h00 || sig2 !== 8'h00, "CPU signature stuck at zero");
       check(sig1 !== sig2, "CPU signature frozen between frames");
     end
@@ -322,11 +325,16 @@ module zirh_scenarios_tb;
   task scn_echo_sweep;
     begin
       cur_scn = "echo_sweep"; chip_boot;
-      // edge values, including bytes that collide with the frame sync
+      // edge values, echoed b+1 by firmware. 0x5A (the first frame-sync
+      // byte) is NOT a command, so it proves the sync-collision echo
+      // path. The second sync byte 0x33 is '3', a real inject command,
+      // so it does NOT echo - testing its echo would test the wrong
+      // thing; its command behavior lives in inject_counters. 0x40 is
+      // the byte just below the '0'..'4' command block, 0x35 just above.
       uart_send(8'h00); uart_expect(8'h01, 40, "echo of 0x00");
       uart_send(8'hFE); uart_expect(8'hFF, 40, "echo of 0xFE");
       uart_send(8'h5A); uart_expect(8'h5B, 40, "echo of sync byte 0x5A");
-      uart_send(8'h33); uart_expect(8'h34, 40, "echo of sync byte 0x33");
+      uart_send(8'h35); uart_expect(8'h36, 40, "echo of 0x35 (just above cmds)");
     end
   endtask
 
@@ -350,8 +358,14 @@ module zirh_scenarios_tb;
   task scn_inject_counters;
     begin
       cur_scn = "inject_counters"; chip_boot;
+      // gap between commands: the bit-serial CPU has a single RX
+      // register and no FIFO; back-to-back bytes at DIV=20 can clobber
+      // the first before the ~1 MIPS firmware reads it (measured -
+      // RAW_A stayed zero without this). A frame-ish gap is plenty.
       uart_send("1");            // one A-replica -> RAW_A only
+      repeat (4000) @(posedge clk);
       uart_send("4");            // all-B -> ESC_B only
+      repeat (4000) @(posedge clk);
       capture_frame("no frame after injections");
       if (ctr16(5) === 16'h0) capture_frame("counters never latched");
       check(ctr16(5)  === 16'h1, "RAW_A must read 1");
@@ -394,12 +408,13 @@ module zirh_scenarios_tb;
   endtask
 
   task scn_reset_midframe;
-    reg ok; reg [7:0] b;
+    integer st; reg [7:0] b;
     begin
       cur_scn = "reset_midframe"; chip_boot;
-      // wait for a frame to START, then yank reset in its middle
-      uart_rx_byte(TLM_CYCLES, ok, b);
-      check(ok, "no traffic before mid-frame reset");
+      // wait for any byte (status 0=got, the refactored convention),
+      // then yank reset mid-stream
+      uart_rx_byte(TLM_CYCLES, st, b);
+      check(st != 1, "no traffic before mid-frame reset");
       rst_n = 1'b0;
       repeat (8) @(posedge clk);
       rst_n = 1'b1;
@@ -432,12 +447,17 @@ module zirh_scenarios_tb;
   task scn_uart_glitch;
     begin
       cur_scn = "uart_glitch"; chip_boot;
-      // a runt low far shorter than a start bit
-      uart_bit(1'b0, 3);
-      uart_bit(1'b1, 3 * DIV);
-      // and a half-bit runt, the nastier case
-      uart_bit(1'b0, DIV / 2 - 2);
-      uart_bit(1'b1, 3 * DIV);
+      // A runt falling edge starts a phantom frame: the RX is BUSY for a
+      // full 10-bit-time (10*DIV) while it samples, sees the start
+      // sample high at DIV/2, and drops the byte silently (zirh_rs422
+      // header). The idle after each runt must therefore exceed that
+      // busy window, or the real byte's start edge hits a busy RX and
+      // is ignored - which is the wedge this test would otherwise
+      // MISREAD as a chip fault (measured: 3*DIV was too short).
+      uart_bit(1'b0, 3);                 // sub-bit runt
+      uart_bit(1'b1, 12 * DIV);          // let the phantom frame clear
+      uart_bit(1'b0, DIV / 2 - 2);       // half-bit runt, the nastier one
+      uart_bit(1'b1, 12 * DIV);          // clear again
       // the line must still decode a real byte
       uart_send(8'h41);
       uart_expect(8'h42, 40, "RX wedged by runt start bits");
