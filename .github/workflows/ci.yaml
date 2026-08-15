@@ -87,6 +87,8 @@ jobs:
         run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.sram
       - name: QSPI-MRAM suite (both widths, abort, boot-from-MRAM)
         run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.qspi
+      - name: standalone SoC suite (was rotting outside CI; found via zirh3)
+        run: PDK_ROOT=$HOME/.ciel make -C test -B -f Makefile.soc
       - name: functional coverage gate - every FSM arc seen
         run: python3 scripts/coverage_report.py
 

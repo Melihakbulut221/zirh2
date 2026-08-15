@@ -22,6 +22,18 @@ BOOT_CYCLES = 120_000  # crt0 zero-fill + the boot ROM-checksum loop, bit-serial
 
 async def start(dut):
     cocotb.start_soon(Clock(dut.clk, CLK_NS, unit="ns").start())
+    # the ISP loader port (added with the programming interface), tied
+    # off: no loader in this standalone suite. por_rst_n_i is a REAL
+    # POR - it pulses with the system reset below, or the RAM state
+    # stays X (measured in the zirh3 import, where this suite's rot was
+    # discovered: it had been failing silently outside CI).
+    dut.por_rst_n_i.value = 0
+    dut.isp_hold_i.value = 0
+    dut.boot_sel_i.value = 0
+    dut.isp_cyc_i.value = 0
+    dut.isp_adr_i.value = 0
+    dut.isp_dat_i.value = 0
+    dut.isp_we_i.value = 0
     dut.uart_rx_i.value = 1
     dut.tlm_data_i.value = 0
     dut.tlm_valid_i.value = 0
@@ -34,6 +46,7 @@ async def start(dut):
     cocotb.start_soon(_slot3_stub(dut))
     await ClockCycles(dut.clk, 5)
     dut.rst_n.value = 1
+    dut.por_rst_n_i.value = 1
 
 
 async def _slot3_stub(dut):
