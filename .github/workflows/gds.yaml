@@ -1,7 +1,18 @@
 name: gds
 
+# The GDS is a function of the hardening inputs and nothing else, so
+# only those paths trigger a build. Before this filter, every doc or
+# test push started a 45-minute hardening that had to be cancelled by
+# hand to save runner budget - and each cancel left a red X on a
+# commit whose die was already proven. A test-only change that should
+# be validated against the gate level can still be run any time via
+# workflow_dispatch.
 on:
   push:
+    paths:
+      - 'src/**'
+      - 'info.yaml'
+      - '.github/workflows/gds.yaml'
   workflow_dispatch:
 
 jobs:
